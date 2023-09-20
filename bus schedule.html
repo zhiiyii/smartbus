@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Schedule Management</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="topnav">
+        <div class="dropdown">
+            <button class="dropbtn">Bus Terminal</button>
+            <div class="dropdown-content">
+                <a href="bus schedule.html">Bus Schedules</a>
+                <a href="bus information.html">Bus Details</a>
+                <a href="bus entry.html">Bus Entries</a>
+                <a href="bus stop warning.html">Bus Stop Warning</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">2</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">3</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">4</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+    </div>
+
+    <h1>Bus Schedules</h1>
+
+    <div class="scrollable">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Schedule ID</th>
+                    <th>Bus ID</th>
+                    <th>Departure Time</th>
+                    <th>Slot</th>
+                    <th>Trip</th>
+                </tr>
+            </thead>
+            <tbody id="schedule-body">
+                <!-- Bus schedule data will be displayed here -->
+            </tbody>
+        </table>
+    </div>
+
+    <form id="schedule-form">
+        <input type="radio" id="add" name="action" value="add" required>
+        <label class="radio-label" for="add">Add</label>
+        <input type="radio" id="edit" name="action" value="edit" required>
+        <label class="radio-label" for="edit">Edit</label>
+        <input type="radio" id="remove" name="action" value="remove" required>
+        <label class="radio-label" for="remove">Remove</label><br>
+
+        <label for="date">Date:</label>
+        <input type="date" id="date" required><br>
+        <label for="schedule-id">Schedule ID:</label>
+        <input type="text" id="schedule-id" required><br>
+
+        <div id="hidden-fields" class="form-group">
+            <label for="bus-id">Bus ID:</label>
+            <input type="text" id="bus-id" required><br>
+            <label for="departure-time">Departure Time:</label>
+            <input type="text" id="departure-time" required><br>
+            <label for="slot">Slot:</label>
+            <input type="text" id="slot" required><br>
+            <label for="trip">Trip:</label>
+            <input type="text" id="trip" required><br>
+        </div>
+        <button type="submit">Submit</button>
+    </form>
+    
+    <script>
+        // Firebase configuration
+        const config = {
+            "apiKey": "AIzaSyDXiDgKynRFsgU70C40Xdv2su1n1pjKbJU",
+            "authDomain":"smart-bus-6e6d8.firebaseapp.com",
+            "databaseURL":"https://smart-bus-6e6d8-default-rtdb.asia-southeast1.firebasedatabase.app",
+            "storageBucket":"smart-bus-6e6d8.appspot.com"
+        };
+
+        firebase.initializeApp(config);
+        const database = firebase.database();
+        const scheduleRef = database.ref("Bus Terminal Module/Schedule");
+
+        // Function to display bus schedule data in the table
+        function displayBusSchedule(data) {
+            const scheduleBody = document.getElementById("schedule-body");
+
+            // Clear previous data
+            scheduleBody.innerHTML = "";
+
+            // Loop through the schedule data and add rows to the table
+            for (const date in data) {
+                if (data.hasOwnProperty(date)) {
+                    const dateData = data[date];
+                    for (const schedule_id in dateData) {
+                        if (dateData.hasOwnProperty(schedule_id)) {
+                            const schedule = dateData[schedule_id];
+                            const row = document.createElement("tr");
+                            row.innerHTML = `
+                                <td>${date}</td>
+                                <td>${schedule_id}</td>
+                                <td>${schedule["Bus ID"]}</td>
+                                <td>${schedule["Departure Time"]}</td>
+                                <td>${schedule["Slot"]}</td>
+                                <td>${schedule["Trip"]}</td>
+                            `;
+                            scheduleBody.appendChild(row);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Function to fetch and display bus schedule data from current date
+        function fetchAndDisplayBusSchedule() {
+            // Get the current date in the format YYYY-MM-DD
+            const currentDate = new Date().toISOString().slice(0, 10);
+
+            // Query the schedules starting from the current date
+            scheduleRef.orderByKey().startAt(currentDate).once("value")
+                .then(snapshot => {
+                    const scheduleData = snapshot.val();
+                    displayBusSchedule(scheduleData);
+                })
+                .catch(error => {
+                    console.error("Error fetching bus schedule:", error);
+                });
+        }
+
+        // Function to toggle the visibility of input fields based on the selected action
+        function toggleInputFields() {
+            const action = document.querySelector('input[name="action"]:checked').value;
+            const hiddenInput = document.getElementById("hidden-fields");
+            const busIdInput = document.getElementById("bus-id");
+            const departureTimeInput = document.getElementById("departure-time");
+            const slotInput = document.getElementById("slot");
+            const tripInput = document.getElementById("trip");
+
+            if (action === "remove") {
+                hiddenInput.style.display = "none";
+                busIdInput.removeAttribute("required");
+                departureTimeInput.removeAttribute("required");
+                slotInput.removeAttribute("required");
+                tripInput.removeAttribute("required");
+            } else {
+                hiddenInput.style.display = "block";
+                busIdInput.setAttribute("required", true);
+                departureTimeInput.setAttribute("required", true);
+                slotInput.setAttribute("required", true);
+                tripInput.setAttribute("required", true);
+            }
+        }
+
+        // Initial calls
+        fetchAndDisplayBusSchedule();
+
+        const actionRadios = document.querySelectorAll('input[name="action"]');
+        actionRadios.forEach(radio => {
+            radio.addEventListener("change", toggleInputFields);
+        });
+
+        // Function to handle the form submission for add, edit, and remove
+        const scheduleForm = document.getElementById("schedule-form");
+        scheduleForm.addEventListener("submit", event => {
+            event.preventDefault();
+
+            const action = document.querySelector('input[name="action"]:checked').value;
+            const date = document.getElementById("date").value;
+            const schedule_id = document.getElementById("schedule-id").value;
+            const busId = document.getElementById("bus-id").value;
+            const departureTime = document.getElementById("departure-time").value;
+            const slot = document.getElementById("slot").value;
+            const trip = document.getElementById("trip").value;
+
+            if (action === "add") {
+                // Add bus schedule to Firebase
+                scheduleRef.child(date).child(schedule_id).set({
+                    "Bus ID": busId,
+                    "Departure Time": departureTime,
+                    "Slot": slot,
+                    "Trip": trip
+                });
+                alert("Bus schedule added successfully!");
+            } else if (action === "edit") {
+                // Check if the schedule exists
+                scheduleRef.child(date).child(schedule_id).once("value", snapshot => {
+                    if (snapshot.exists()) {
+                        // Update bus schedule in Firebase
+                        scheduleRef.child(date).child(schedule_id).update({
+                            "Bus ID": busId,
+                            "Departure Time": departureTime,
+                            "Slot": slot,
+                            "Trip": trip
+                        });
+                        alert("Bus schedule updated successfully!");
+                    } else {
+                        alert("Bus schedule does not exist. Use the Add option to add details.");
+                    }
+                });
+            } else if (action === "remove") {
+                // Check if the schedule exists
+                scheduleRef.child(date).child(schedule_id).once("value", snapshot => {
+                    if (snapshot.exists()) {
+                        // Remove bus schedule from Firebase
+                        scheduleRef.child(date).child(schedule_id).remove()
+                            .then(() => {
+                                alert("Bus schedule removed successfully!");
+                            })
+                            .catch(error => {
+                                console.error("Error removing bus schedule:", error);
+                            });
+                    } else {
+                        alert("Bus schedule does not exist. Nothing to remove.");
+                    }
+                });
+            }
+
+            // Clear the form fields
+            document.getElementById("date").value = "";
+            document.getElementById("schedule-id").value = "";
+            document.getElementById("bus-id").value = "";
+            document.getElementById("departure-time").value = "";
+            document.getElementById("slot").value = "";
+            document.getElementById("trip").value = "";
+
+            toggleInputFields();
+            fetchAndDisplayBusSchedule();
+        });
+    </script>
+</body>
+</html>

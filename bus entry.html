@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Entries</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="topnav">
+        <div class="dropdown">
+            <button class="dropbtn">Bus Terminal</button>
+            <div class="dropdown-content">
+                <a href="bus schedule.html">Bus Schedules</a>
+                <a href="bus information.html">Bus Details</a>
+                <a href="bus entry.html">Bus Entries</a>
+                <a href="bus stop warning.html">Bus Stop Warning</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">2</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">3</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">4</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+    </div>
+
+    <h1>Bus Entries</h1>
+
+    <!-- Filter records -->
+    <form>
+        <label for="date-picker">Filter by Date:</label>
+        <input type="date" id="date-filter" name="date"><br>
+        <label for="bus-id-filter">Filter by Bus ID:</label>
+        <input type="text" id="bus-id-filter" placeholder="Enter Bus ID"><br>
+        <button type="button" onclick="applyFilters()">Apply Filters</button>
+    </form>
+
+    <div class="scrollable">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Bus ID</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <!-- Data rows will be added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const config = {
+            "apiKey": "AIzaSyDXiDgKynRFsgU70C40Xdv2su1n1pjKbJU",
+            "authDomain":"smart-bus-6e6d8.firebaseapp.com",
+            "databaseURL":"https://smart-bus-6e6d8-default-rtdb.asia-southeast1.firebasedatabase.app",
+            "storageBucket":"smart-bus-6e6d8.appspot.com"
+        };
+
+        firebase.initializeApp(config);
+        const database = firebase.database();
+        const entriesRef = database.ref("Bus Terminal Module/Entries");
+        const busDetails = {};
+
+        // Function to fetch and display sorted data in a table
+        function displaySortedData(dataToDisplay) {
+            const tableBody = document.getElementById("table-body");
+
+            // Clear previous data
+            tableBody.innerHTML = "";
+
+            // Create an array to hold the data for sorting
+            const dataArray = [];
+
+            // Loop through the data and push each entry as an object to the array
+            for (const date in dataToDisplay) {
+                if (dataToDisplay.hasOwnProperty(date)) {
+                    const dateData = dataToDisplay[date];
+                    for (const time in dateData) {
+                        if (dateData.hasOwnProperty(time)) {
+                            const busId = dateData[time]["Bus ID"];
+                            dataArray.push({ date, time, busId });
+                        }
+                    }
+                }
+            }
+
+            // Sort the array in descending order by date and time
+            dataArray.sort((a, b) => {
+                const dateComparison = b.date.localeCompare(a.date);
+                if (dateComparison === 0) {
+                    return b.time.localeCompare(a.time);
+                }
+                return dateComparison;
+            });
+
+            // Loop through the sorted array and display it in a table row
+            dataArray.forEach(entry => {
+                const tableRow = document.createElement("tr");
+                tableRow.innerHTML = `
+                    <td>${entry.date}</td>
+                    <td>${entry.time}</td>
+                    <td>${entry.busId}</td>
+                `;
+                tableBody.appendChild(tableRow);
+            });
+        }
+
+        // Function to apply filters
+        function applyFilters() {
+            const dateFilterElement = document.getElementById("date-filter");
+            const dateFilterValue = dateFilterElement.value;
+            const formattedDateFilter = formatDateForFirebase(dateFilterValue);
+
+            const busIdFilter = document.getElementById("bus-id-filter").value;
+
+            // Retrieve the original data from Firebase
+            entriesRef.once("value")
+                .then(snapshot => {
+                    const data = snapshot.val();
+
+                    let filteredData = data;
+
+                    if (formattedDateFilter) {
+                        filteredData = filterByDate(filteredData, formattedDateFilter);
+                    }
+
+                    if (busIdFilter) {
+                        filteredData = filterByBusId(filteredData, busIdFilter);
+                    }
+
+                    displaySortedData(filteredData);
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                });
+        }
+
+        // Function to filter data by date
+        function filterByDate(data, date) {
+            const filteredData = {};
+            for (const key in data) {
+                if (data.hasOwnProperty(key) && key === date) {
+                    filteredData[key] = data[key];
+                }
+            }
+            return filteredData;
+        }
+
+        // Function to format the date for Firebase (yyyy-MM-dd)
+        function formatDateForFirebase(inputDate) {
+            const dateParts = inputDate.split("-");
+            if (dateParts.length === 3) {
+                const year = dateParts[0];
+                const month = dateParts[1].padStart(2, "0");
+                const day = dateParts[2].padStart(2, "0");
+                return `${year}-${month}-${day}`;
+            }
+            return "";
+        }
+
+        // Function to filter data by Bus ID
+        function filterByBusId(data, busId) {
+            const filteredData = {};
+            for (const date in data) {
+                if (data.hasOwnProperty(date)) {
+                    const dateData = data[date];
+                    filteredData[date] = {};
+                    for (const time in dateData) {
+                        if (dateData.hasOwnProperty(time) && dateData[time]["Bus ID"] === busId) {
+                            filteredData[date][time] = dateData[time];
+                        }
+                    }
+                }
+            }
+            return filteredData;
+        }
+
+        // Function to set up listeners to auto update table when new date or time is added
+        function setListeners() {
+            entriesRef.on("child_added", snapshot => {
+                applyFilters();
+            });
+
+            entriesRef.on("value", snapshot => {
+                const data = snapshot.val();
+                applyFilters();
+                for (const date in data) {
+                    if (data.hasOwnProperty(date)) {
+                        const dateRef = entriesRef.child(date);
+                        dateRef.on("child_added", snapshot => {
+                            applyFilters();
+                        });
+                    }
+                }
+            });
+        }
+
+        // Initial setup
+        applyFilters();
+        setListeners();
+    </script>
+</body>
+</html>

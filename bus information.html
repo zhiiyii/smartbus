@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Information Management</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="topnav">
+        <div class="dropdown">
+            <button class="dropbtn">Bus Terminal</button>
+            <div class="dropdown-content">
+                <a href="bus schedule.html">Bus Schedules</a>
+                <a href="bus information.html">Bus Details</a>
+                <a href="bus entry.html">Bus Entries</a>
+                <a href="bus stop warning.html">Bus Stop Warning</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">2</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">3</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">4</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+    </div>
+
+    <h1>Bus Details</h1>
+
+    <div class="scrollable">
+        <table>
+            <thead>
+                <tr>
+                    <th>Bus ID</th>
+                    <th>Company</th>
+                    <th>Plate Number</th>
+                </tr>
+            </thead>
+            <tbody id="bus-details-body"></tbody>
+        </table>
+    </div>
+
+    <form id="bus-details-form">
+        <input type="radio" id="add" name="action" value="add" required>
+        <label class="radio-label" for="add">Add</label>
+        <input type="radio" id="edit" name="action" value="edit" required>
+        <label class="radio-label" for="edit">Edit</label>
+        <input type="radio" id="remove" name="action" value="remove" required>
+        <label class="radio-label" for="remove">Remove</label><br>
+
+        <label for="bus-id">Bus ID:</label>
+        <input type="text" id="bus-id" required><br>
+    
+        <div id="hidden-fields">
+            <label for="company">Company:</label>
+            <input type="text" id="company" name="company" required><br>
+            <label for="plate-number">Plate Number:</label>
+            <input type="text" id="plate-number" name="plate-number" required>
+        </div>
+    
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        // Firebase configuration
+        const config = {
+            "apiKey": "AIzaSyDXiDgKynRFsgU70C40Xdv2su1n1pjKbJU",
+            "authDomain":"smart-bus-6e6d8.firebaseapp.com",
+            "databaseURL":"https://smart-bus-6e6d8-default-rtdb.asia-southeast1.firebasedatabase.app",
+            "storageBucket":"smart-bus-6e6d8.appspot.com"
+        };
+
+        firebase.initializeApp(config);
+        const database = firebase.database();
+        const busDetailsRef = database.ref("Bus Terminal Module/Bus");
+
+        // Function to display bus details in the table
+        function displayBusDetails(data) {
+            const busDetailsBody = document.getElementById("bus-details-body");
+
+            // Clear previous data
+            busDetailsBody.innerHTML = "";
+
+            // Loop through the bus data and add rows to the table
+            for (const busId in data) {
+                if (data.hasOwnProperty(busId)) {
+                    const company = data[busId].Company;
+                    const plateNumber = data[busId]["Plate Number"];
+
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${busId}</td>
+                        <td>${company}</td>
+                        <td>${plateNumber}</td>
+                    `;
+
+                    busDetailsBody.appendChild(row);
+                }
+            }
+        }
+
+        // Function to toggle the visibility of input fields based on the selected action
+        function toggleInputFields() {
+            const action = document.querySelector('input[name="action"]:checked').value;
+            const hiddenFields = document.getElementById("hidden-fields");
+            const companyInput = document.getElementById("company");
+            const plateNumberInput = document.getElementById("plate-number");
+
+            if (action === "remove" ) {
+                hiddenFields.style.display = "none";
+                companyInput.removeAttribute("required");
+                plateNumberInput.removeAttribute("required");
+                
+            } else {
+                hiddenFields.style.display = "block";
+                companyInput.setAttribute("required", true);
+                plateNumberInput.setAttribute("required", true);
+            }
+        }
+
+        // Function to set up listeners to auto update table
+        function setListeners() {
+            busDetailsRef.once("value")
+                .then(snapshot => {
+                    const busData = snapshot.val();
+                    displayBusDetails(busData);
+                })
+                .catch(error => {
+                    console.error("Error fetching bus details:", error);
+                });
+        }
+
+        setListeners();
+
+        // Listen for changes in the action radio buttons
+        const actionRadios = document.querySelectorAll('input[name="action"]');
+        actionRadios.forEach(radio => {
+            radio.addEventListener("change", toggleInputFields);
+        });
+
+        // Handle the form submission to add/edit/remove bus details
+        const busDetailsForm = document.getElementById("bus-details-form");
+        busDetailsForm.addEventListener("submit", event => {
+            const busId = document.getElementById("bus-id").value;
+            const company = document.getElementById("company").value;
+            const plateNumber = document.getElementById("plate-number").value;
+            const action = document.querySelector('input[name="action"]:checked').value;
+
+            if (action === "add") {
+                busDetailsRef.child(busId).set({
+                    Company: company,
+                    "Plate Number": plateNumber
+                });
+                alert("Bus details added successfully!");
+            } else if (action === "edit") {
+                busDetailsRef.child(busId).once("value", snapshot => {
+                    if (snapshot.exists()) {
+                        busDetailsRef.child(busId).update({
+                            Company: company,
+                            "Plate Number": plateNumber
+                        });
+                        alert("Bus details updated successfully!");
+                    } else {
+                        alert("Bus ID does not exist. Use the Add option to add details.");
+                    }
+                });
+            } else if (action === "remove") {
+                busDetailsRef.child(busId).once("value", snapshot => {
+                    if (snapshot.exists()) {
+                        busDetailsRef.child(busId).remove();
+                        alert("Bus details removed successfully!");
+                    } else {
+                        alert("Bus ID does not exist. Nothing to remove.");
+                    }
+                });
+            }
+
+            // Clear the form fields
+            document.getElementById("bus-id").value = "";
+            document.getElementById("company").value = "";
+            document.getElementById("plate-number").value = "";
+
+            // Update input field visibility
+            toggleInputFields();
+        });
+
+        // Listen to update the table in real-time
+        busDetailsRef.on("child_added", snapshot => {
+            setListeners();
+        });
+
+        busDetailsRef.on("child_changed", snapshot => {
+            setListeners();
+        });
+
+        busDetailsRef.on("child_removed", snapshot => {
+            setListeners();
+        });
+    </script>
+</body>
+</html>
