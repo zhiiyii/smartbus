@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Seats Availability</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .availability-seats-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 50vh;
+            margin: 0;
+        }
+
+        #passenger-count-info {
+            background-color: #f0f0f0;
+            padding: 50px;
+            border: 1px solid #ccc;
+            width: 500px;
+            height: 200px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #availability-seats-date {
+            margin-left: 20px;
+            text-align: left;
+            font-size: 20px;
+        }
+
+        #passenger-count {
+            font-size: 80px;
+            margin-top: 50px;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="topnav">
+        <div class="dropdown">
+            <button class="dropbtn">Bus Terminal</button>
+            <div class="dropdown-content">
+                <a href="bus schedule.html">Bus Schedules</a>
+                <a href="bus information.html">Bus Details</a>
+                <a href="bus entry.html">Bus Entries</a>
+                <a href="bus stop warning.html">Bus Stop Warning</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Bus Environment</button>
+            <div class="dropdown-content">
+                <a href="bus_fan_usage.html">Bus Fan Usage</a>
+                <a href="bus_light_usage.html">Bus Light Usage</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Passenger Services Dashboard</button>
+            <div class="dropdown-content">
+                <a href="card balance management.html">Card Balance Management</a>
+                <a href="bus fare tracking.html">Bus Fare Tracking</a>
+                <a href="bus seats availability.html">Real-time Seats Availability</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">4</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+    </div>
+    <h1>Availability Seats</h1>
+    <div class="availability-seats-container">
+        <div id="passenger-count-info">
+            <div id="availability-seats-date"></div>
+            <div id="passenger-count"></div>
+        </div>
+    </div>
+
+</body>
+<script>
+    // Initialize Firebase 
+    const config = {
+        "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
+        "authDomain": "smart-bus-ab217.firebaseapp.com",
+        "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
+        "storageBucket": "smart-bus-ab217.appspot.com"
+    };
+
+    firebase.initializeApp(config);
+
+    // Reference to the passenger counts in Firebase
+    const passengerCountsRef = firebase.database().ref('Bus Ticketing/Passenger_count_tracking');
+
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+
+    // Retrieve and display today's passenger count
+    passengerCountsRef.child(today).once('value')
+        .then(snapshot => {
+            const todayCount = snapshot.val();
+
+            if (todayCount !== null) {
+                displayPassengerCount(today, todayCount);
+            } else {
+                displayNoDataFound();
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching data:", error);
+        });
+
+
+    //display passenger countn
+    function displayPassengerCount(date, count) {
+        //get the date
+        const dateElement = document.getElementById('availability-seats-date');
+        const passengerCountElement = document.getElementById('passenger-count');
+        // Get the current time
+        const currentTime = new Date().toLocaleTimeString();
+
+        dateElement.textContent = `${date} ${currentTime}`;
+
+        // check the count
+        if (count > 20) {
+            passengerCountElement.textContent = `${count} / 20`;
+            passengerCountElement.style.color = 'red'; // Set the text color to red
+        } else if (count > 15) {
+            passengerCountElement.textContent = `${count} / 20`;
+            passengerCountElement.style.color = 'orange';
+        }
+        else {
+            passengerCountElement.textContent = `${count} / 20`;
+            passengerCountElement.style.color = ''; // Reset text color to default
+        }
+    }
+
+    // Function to handle real-time updates
+    passengerCountsRef.child(today).on('value', snapshot => {
+        const todayCount = snapshot.val();
+
+        if (todayCount !== null) {
+            displayPassengerCount(today, todayCount);
+        } else {
+            displayNoDataFound();
+        }
+    });
+
+    //display if no data
+    function displayNoDataFound() {
+        const passengerCountInfo = document.getElementById('passenger-count');
+        const paragraph = document.createElement('p');
+        paragraph.textContent = "No data found for today.";
+        passengerCountInfo.appendChild(paragraph);
+    }
+
+
+</script>
+
+</html>

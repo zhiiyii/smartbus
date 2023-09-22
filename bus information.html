@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -9,6 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
 </head>
+
 <body>
     <div class="topnav">
         <div class="dropdown">
@@ -28,10 +30,11 @@
             </div>
         </div>
         <div class="dropdown">
-            <button class="dropbtn">3</button>
+            <button class="dropbtn">Passenger Services Dashboard</button>
             <div class="dropdown-content">
-                <a href="#">Option 1</a>
-                <a href="#">Option 2</a>
+                <a href="card balance management.html">Card Balance Management</a>
+                <a href="bus fare tracking.html">Bus Fare Tracking</a>
+                <a href="bus seats availability.html">Real-time Seats Availability</a>
             </div>
         </div>
         <div class="dropdown">
@@ -68,14 +71,14 @@
 
         <label for="bus-id">Bus ID:</label>
         <input type="text" id="bus-id" required><br>
-    
+
         <div id="hidden-fields">
             <label for="company">Company:</label>
             <input type="text" id="company" name="company" required><br>
             <label for="plate-number">Plate Number:</label>
             <input type="text" id="plate-number" name="plate-number" required>
         </div>
-    
+
         <button type="submit">Submit</button>
     </form>
 
@@ -83,9 +86,9 @@
         // Firebase configuration
         const config = {
             "apiKey": "AIzaSyDXiDgKynRFsgU70C40Xdv2su1n1pjKbJU",
-            "authDomain":"smart-bus-6e6d8.firebaseapp.com",
-            "databaseURL":"https://smart-bus-6e6d8-default-rtdb.asia-southeast1.firebasedatabase.app",
-            "storageBucket":"smart-bus-6e6d8.appspot.com"
+            "authDomain": "smart-bus-6e6d8.firebaseapp.com",
+            "databaseURL": "https://smart-bus-6e6d8-default-rtdb.asia-southeast1.firebasedatabase.app",
+            "storageBucket": "smart-bus-6e6d8.appspot.com"
         };
 
         firebase.initializeApp(config);
@@ -124,11 +127,11 @@
             const companyInput = document.getElementById("company");
             const plateNumberInput = document.getElementById("plate-number");
 
-            if (action === "remove" ) {
+            if (action === "remove") {
                 hiddenFields.style.display = "none";
                 companyInput.removeAttribute("required");
                 plateNumberInput.removeAttribute("required");
-                
+
             } else {
                 hiddenFields.style.display = "block";
                 companyInput.setAttribute("required", true);
@@ -216,4 +219,5 @@
         });
     </script>
 </body>
+
 </html>

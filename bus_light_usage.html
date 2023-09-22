@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
 </head>
+
 <body>
 
     <div class="topnav">
@@ -28,10 +30,11 @@
             </div>
         </div>
         <div class="dropdown">
-            <button class="dropbtn">3</button>
+            <button class="dropbtn">Passenger Services Dashboard</button>
             <div class="dropdown-content">
-                <a href="#">Option 1</a>
-                <a href="#">Option 2</a>
+                <a href="card balance management.html">Card Balance Management</a>
+                <a href="bus fare tracking.html">Bus Fare Tracking</a>
+                <a href="bus seats availability.html">Real-time Seats Availability</a>
             </div>
         </div>
         <div class="dropdown">
@@ -54,8 +57,8 @@
 
     <h1>Bus Inner Light Adjustment Reports</h1>
 
-     <!-- Create a table to display LED changes based on timestamps -->
-     <div class="table-container">
+    <!-- Create a table to display LED changes based on timestamps -->
+    <div class="table-container">
         <div class="scrollable-table">
             <table>
                 <thead>
@@ -75,7 +78,7 @@
         </div>
     </div>
 
-    <div class="intensity-averages" style = "display:none;">
+    <div class="intensity-averages" style="display:none;">
         <h2>Average Intensity for Selected Date:</h2>
         <p>High Intensity: <span id="avgHighIntensity">0</span></p>
         <p>Medium Intensity: <span id="avgMediumIntensity">0</span></p>
@@ -83,13 +86,13 @@
     </div>
 
     <script>
-    // Firebase configuration
-    var config = {
-    "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
-    "authDomain": "smart-bus-ab217.firebaseapp.com",
-    "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
-    "storageBucket": "smart-bus-ab217.appspot.com"
-    };
+        // Firebase configuration
+        var config = {
+            "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
+            "authDomain": "smart-bus-ab217.firebaseapp.com",
+            "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
+            "storageBucket": "smart-bus-ab217.appspot.com"
+        };
 
         // Initialize Firebase
         firebase.initializeApp(config);
@@ -122,53 +125,53 @@
         }
 
         // Function to calculate and update intensity averages
-function calculateIntensityAverages(selectedDate) {
-    const rows = tableBody.getElementsByTagName("tr");
-    let totalHighIntensity = 0;
-    let totalMediumIntensity = 0;
-    let totalLowIntensity = 0;
-    let count = 0;
+        function calculateIntensityAverages(selectedDate) {
+            const rows = tableBody.getElementsByTagName("tr");
+            let totalHighIntensity = 0;
+            let totalMediumIntensity = 0;
+            let totalLowIntensity = 0;
+            let count = 0;
 
-    for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const dateCell = row.cells[0].textContent;
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const dateCell = row.cells[0].textContent;
 
-        if (dateCell === selectedDate) {
-            const intensityDescription = row.cells[5].textContent;
+                if (dateCell === selectedDate) {
+                    const intensityDescription = row.cells[5].textContent;
 
-            switch (intensityDescription) {
-                case "High Intensity":
-                    totalHighIntensity++;
-                    break;
-                case "Medium Intensity":
-                    totalMediumIntensity++;
-                    break;
-                case "Low Intensity":
-                    totalLowIntensity++;
-                    break;
+                    switch (intensityDescription) {
+                        case "High Intensity":
+                            totalHighIntensity++;
+                            break;
+                        case "Medium Intensity":
+                            totalMediumIntensity++;
+                            break;
+                        case "Low Intensity":
+                            totalLowIntensity++;
+                            break;
+                    }
+
+                    count++;
+                }
             }
 
-            count++;
+            // Calculate and update the averages as percentages
+            const totalRecords = count;
+            const avgHighIntensity = ((totalHighIntensity / totalRecords) * 100).toFixed(2);
+            const avgMediumIntensity = ((totalMediumIntensity / totalRecords) * 100).toFixed(2);
+            const avgLowIntensity = ((totalLowIntensity / totalRecords) * 100).toFixed(2);
+
+            document.getElementById("avgHighIntensity").textContent = avgHighIntensity + "%";
+            document.getElementById("avgMediumIntensity").textContent = avgMediumIntensity + "%";
+            document.getElementById("avgLowIntensity").textContent = avgLowIntensity + "%";
+
+            // Show the intensity averages section
+            const intensityAveragesSection = document.querySelector(".intensity-averages");
+            intensityAveragesSection.style.display = "block";
         }
-    }
-
-    // Calculate and update the averages as percentages
-    const totalRecords = count;
-    const avgHighIntensity = ((totalHighIntensity / totalRecords) * 100).toFixed(2);
-    const avgMediumIntensity = ((totalMediumIntensity / totalRecords) * 100).toFixed(2);
-    const avgLowIntensity = ((totalLowIntensity / totalRecords) * 100).toFixed(2);
-
-    document.getElementById("avgHighIntensity").textContent = avgHighIntensity + "%";
-    document.getElementById("avgMediumIntensity").textContent = avgMediumIntensity + "%";
-    document.getElementById("avgLowIntensity").textContent = avgLowIntensity + "%";
-
-    // Show the intensity averages section
-    const intensityAveragesSection = document.querySelector(".intensity-averages");
-    intensityAveragesSection.style.display = "block";
-}
 
         // Add a click event listener to the filter button
-        filterButton.addEventListener("click", function() {
+        filterButton.addEventListener("click", function () {
             // Get the selected date from the input field
             const selectedDate = filterDateInput.value;
 
@@ -178,7 +181,7 @@ function calculateIntensityAverages(selectedDate) {
         });
 
         // Listen for changes in LED data
-        ledDataRef.on("child_added", function(snapshot) {
+        ledDataRef.on("child_added", function (snapshot) {
             var data = snapshot.val();
             var timestamp = snapshot.key;
 
@@ -210,9 +213,9 @@ function calculateIntensityAverages(selectedDate) {
             led3Cell.textContent = led3Status;
             intensityCell.textContent = intensityDescription;
 
-        // Show all records by default
-        filterTableByDate("");
-        //calculateIntensityAverages("");
+            // Show all records by default
+            filterTableByDate("");
+            //calculateIntensityAverages("");
         });
 
         // // Initialize Adafruit IO client
@@ -237,4 +240,5 @@ function calculateIntensityAverages(selectedDate) {
         // fetchData();
     </script>
 </body>
+
 </html>

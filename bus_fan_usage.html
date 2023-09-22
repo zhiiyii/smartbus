@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
 </head>
+
 <body>
     <div class="topnav">
         <div class="dropdown">
@@ -27,10 +29,11 @@
             </div>
         </div>
         <div class="dropdown">
-            <button class="dropbtn">3</button>
+            <button class="dropbtn">Passenger Services Dashboard</button>
             <div class="dropdown-content">
-                <a href="#">Option 1</a>
-                <a href="#">Option 2</a>
+                <a href="card balance management.html">Card Balance Management</a>
+                <a href="bus fare tracking.html">Bus Fare Tracking</a>
+                <a href="bus seats availability.html">Real-time Seats Availability</a>
             </div>
         </div>
         <div class="dropdown">
@@ -53,8 +56,8 @@
 
     <h1>Bus Fan Adjustment Reports</h1>
 
-     <!-- Create a table to display fan changes based on timestamps -->
-     <div class="table-container">
+    <!-- Create a table to display fan changes based on timestamps -->
+    <div class="table-container">
         <div class="scrollable-table">
             <table>
                 <thead>
@@ -80,15 +83,15 @@
     <script>
         // Firebase configuration
         var config = {
-        "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
-        "authDomain": "smart-bus-ab217.firebaseapp.com",
-        "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
-        "storageBucket": "smart-bus-ab217.appspot.com"
+            "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
+            "authDomain": "smart-bus-ab217.firebaseapp.com",
+            "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
+            "storageBucket": "smart-bus-ab217.appspot.com"
         };
-    
+
         // Initialize Firebase
         firebase.initializeApp(config);
-    
+
         // Reference to LED data in Firebase
         const fanDataRef = firebase.database().ref("Environment_module/Bus_fan");
 
@@ -117,7 +120,7 @@
         }
 
         // Add a click event listener to the filter button
-        filterButton.addEventListener("click", function() {
+        filterButton.addEventListener("click", function () {
             // Get the selected date from the input field
             const selectedDate = filterDateInput.value;
 
@@ -201,7 +204,7 @@
         }
 
         // Add a click event listener to the filter button
-        filterButton.addEventListener("click", function() {
+        filterButton.addEventListener("click", function () {
             // Get the selected date from the input field
             const selectedDate = filterDateInput.value;
 
@@ -217,4 +220,5 @@
         fanDataRef.on("value", displayFanData);
     </script>
 </body>
+
 </html>

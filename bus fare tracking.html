@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Fare Tracking</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
+    <style>
+        .bus_fare_table {
+            padding: 50px;
+            padding-left: 450px;
+            padding-right: 450px;
+        }
+
+        .total-fare {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="topnav">
+        <div class="dropdown">
+            <button class="dropbtn">Bus Terminal</button>
+            <div class="dropdown-content">
+                <a href="bus schedule.html">Bus Schedules</a>
+                <a href="bus information.html">Bus Details</a>
+                <a href="bus entry.html">Bus Entries</a>
+                <a href="bus stop warning.html">Bus Stop Warning</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Bus Environment</button>
+            <div class="dropdown-content">
+                <a href="bus_fan_usage.html">Bus Fan Usage</a>
+                <a href="bus_light_usage.html">Bus Light Usage</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Passenger Services Dashboard</button>
+            <div class="dropdown-content">
+                <a href="card balance management.html">Card Balance Management</a>
+                <a href="bus fare tracking.html">Bus Fare Tracking</a>
+                <a href="bus seats availability.html">Real-time Seats Availability</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">4</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+    </div>
+
+    <form>
+        <label for="fare-date-filter">Filter by Date:</label>
+        <input type="date" id="fare-date-filter" name="date">
+        <button type="button" onclick="applyDateFilter()">Apply Date Filter</button>
+        <button type="button" onclick="showAllData()">Show All</button>
+    </form>
+
+    <h1>Bus Fare Tracking</h1>
+    <div class="bus_fare_table">
+        <table id="bus-fare-table-details">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Day</th>
+                    <th>Bus Fare Collected</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+        </table>
+    </div>
+    <div class="total-fare">
+        <p id="total-fare-all"></p>
+        <p id="total-fare"></p>
+        <p id="highest-fare-day"></p>
+    </div>
+</body>
+<script>
+    // Firebase configuration
+    const config = {
+        "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
+        "authDomain": "smart-bus-ab217.firebaseapp.com",
+        "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
+        "storageBucket": "smart-bus-ab217.appspot.com"
+    };
+
+    firebase.initializeApp(config);
+    const fareRef = firebase.database().ref("Bus Ticketing/Bus_fare_tracking");
+
+    // Function to display sorted data in descending order by date
+    function displaySortedData(dataToDisplay) {
+        const tableBody = document.getElementById("table-body");
+
+        // Clear previous data
+        tableBody.innerHTML = "";
+
+        // Create an array to hold the data for sorting
+        const dataArray = [];
+
+        // Loop through the data and push each entry as an object to the array
+        for (const date in dataToDisplay) {
+            if (dataToDisplay.hasOwnProperty(date)) {
+                const dateData = dataToDisplay[date];
+                let totalFare = 0; // Initialize the total fare for this date
+                const dateObject = new Date(date);
+                const dayOfWeek = getDayOfWeek(dateObject); // Calculate the day of the week
+                for (const cardId in dateData) {
+                    if (dateData.hasOwnProperty(cardId)) {
+                        const busFare = parseFloat(dateData[cardId]["Bus Fare"]).toFixed(2);
+                        totalFare += parseFloat(busFare); // Accumulate the fare for this card
+                    }
+                }
+                dataArray.push({ date, dayOfWeek, totalFare });
+            }
+        }
+
+        // Sort the array in descending order by date
+        dataArray.sort((a, b) => {
+            return new Date(b.date) - new Date(a.date);
+        });
+
+        // Loop through the sorted array and display the data in the table
+        dataArray.forEach(entry => {
+            const tableRow = document.createElement("tr");
+            tableRow.innerHTML = `
+                <td>${entry.date}</td>
+                <td>${entry.dayOfWeek}</td>
+                <td>$${entry.totalFare.toFixed(2)}</td>
+            `;
+            tableBody.appendChild(tableRow);
+        });
+    }
+
+    //get day of the date
+    function getDayOfWeek(date) {
+        const daysOfWeek = ["Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"];
+        const dayIndex = date.getDay(); // 0 for Sunday, 1 for Monday, etc.
+        return daysOfWeek[dayIndex];
+    }
+
+    //apply date filter
+    function applyDateFilter() {
+        const dateFilterElement = document.getElementById("fare-date-filter");
+        const selectedDate = dateFilterElement.value;
+        const formattedSelectedDate = formatDateForFirebase(selectedDate);
+
+        // Check if a date has been selected
+        if (selectedDate) {
+            // Retrieve and display data for the selected date
+            fareRef.once("value")
+                .then(snapshot => {
+                    const data = snapshot.val();
+                    const filteredData = filterByDate(data, selectedDate);
+                    displaySortedData(filteredData);
+                    hideTotalFareForAll();
+                    hideHighestFareDay();
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                });
+        } else {
+            // No date selected, show all data
+            fetchAndDisplayAllData();
+        }
+    }
+
+    //display all data
+    function fetchAndDisplayAllData() {
+        // Retrieve all data from Firebase
+        fareRef.once("value")
+            .then(snapshot => {
+                const data = snapshot.val();
+                // displaySortedData(data);
+                calculateAndDisplayTotalFare(data);
+                // displayTotalFareForAllDates(totalFareForAllDates);
+            })
+            .catch(error => {
+                console.error("Error fetching data:", error);
+            });
+    }
+
+    // Function to calculate total fare for all dates and display below the table
+    function calculateAndDisplayTotalFare(dataToDisplay) {
+        const totalFareDivAll = document.getElementById("total-fare-all");
+        const totalFareDiv = document.getElementById("total-fare");
+        let totalFare = 0;
+
+        // Loop through the data and calculate total fare
+        for (const date in dataToDisplay) {
+            if (dataToDisplay.hasOwnProperty(date)) {
+                const dateData = dataToDisplay[date];
+                for (const cardId in dateData) {
+                    if (dateData.hasOwnProperty(cardId)) {
+                        const busFare = parseFloat(dateData[cardId]["Bus Fare"]);
+                        totalFare += parseFloat(busFare);
+                    }
+                }
+            }
+        }
+
+        // Display the total fare for all dates
+        totalFareDivAll.innerHTML = `Total Bus Fare Collected : $${totalFare.toFixed(2)}`;
+
+        // Call the function to display total fare for each date
+        displaySortedData(dataToDisplay);
+    }
+
+    //hide the total fare text
+    function hideTotalFareForAll() {
+        const totalFareDivAll = document.getElementById("total-fare-all");
+        totalFareDivAll.style.display = "none";
+    }
+
+    //show the total fare text
+    function showTotalFareForAll() {
+        const totalFareDivAll = document.getElementById("total-fare-all");
+        totalFareDivAll.style.display = "block";
+    }
+
+    // Function to filter data by date
+    function filterByDate(data, date) {
+        const filteredData = {};
+        console.log("Dateeeee", filteredData)
+        for (const key in data) {
+            if (data.hasOwnProperty(key) && key === date) {
+                filteredData[key] = data[key];
+            }
+        }
+        return filteredData;
+    }
+
+    // Function to format the date for Firebase (yyyy-MM-dd)
+    function formatDateForFirebase(inputDate) {
+        const dateParts = inputDate.split("-");
+        if (dateParts.length === 3) {
+            const year = dateParts[0];
+            const month = dateParts[1].padStart(2, "0");
+            const day = dateParts[2].padStart(2, "0");
+            return `${year}-${month}-${day}`;
+        }
+        return "";
+    }
+
+    // Function to show the day with the highest fare
+    function showHighestFareDay() {
+        fareRef.once("value")
+            .then(snapshot => {
+                const data = snapshot.val();
+                let highestFare = 0;
+                let highestFareDay = "";
+
+                // Loop through the data to find the day with the highest fare
+                for (const date in data) {
+                    if (data.hasOwnProperty(date)) {
+                        const dateData = data[date];
+                        let totalFare = 0;
+
+                        for (const cardId in dateData) {
+                            if (dateData.hasOwnProperty(cardId)) {
+                                const busFare = parseFloat(dateData[cardId]["Bus Fare"]);
+                                totalFare += parseFloat(busFare);
+                            }
+                        }
+
+                        if (totalFare > highestFare) {
+                            highestFare = totalFare;
+                            highestFareDay = date;
+                        }
+                    }
+                }
+
+                // Display the day with the highest fare
+                const highestFareDayElement = document.getElementById("highest-fare-day");
+                if (highestFareDay) {
+                    const dateObject = new Date(highestFareDay);
+                    const dayOfWeek = getDayOfWeek(dateObject);
+                    highestFareDayElement.innerHTML = `Highest Bus Fare (Day) : ${dayOfWeek}`;
+                } else {
+                    highestFareDayElement.innerHTML = "No data available.";
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching data:", error);
+            });
+    }
+
+    //hide highest fare text
+    function hideHighestFareDay() {
+        const highestFareDayElement = document.getElementById("highest-fare-day");
+        highestFareDayElement.style.display = "none";
+    }
+
+    //show highest fare text
+    function displayHighestFareDay() {
+        const highestFareDayElement = document.getElementById("highest-fare-day");
+        highestFareDayElement.style.display = "block";
+    }
+
+    // Fetch and display all data
+    function showAllData(dataToDisplay) {
+        fetchAndDisplayAllData();
+        showTotalFareForAll();
+        showHighestFareDay();
+        displayHighestFareDay();
+    }
+
+</script>
+
+</html>

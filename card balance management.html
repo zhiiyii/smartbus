@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Balance Management</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
+    <style>
+        .balance-input-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-input input[type="text"] {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            margin-right: 90px;
+        }
+
+
+        .buttons-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .buttons-container button {
+            padding: 15px;
+            margin-top: 10px;
+            width: 270px;
+        }
+
+        .balance-output-box {
+            border: 1px solid #ccc;
+            padding: 100px;
+            margin: 10px;
+            background-color: #f0f0f0;
+        }
+
+        .balance-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #balance-output p {
+            font-size: 20px;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="topnav">
+        <div class="dropdown">
+            <button class="dropbtn">Bus Terminal</button>
+            <div class="dropdown-content">
+                <a href="bus schedule.html">Bus Schedules</a>
+                <a href="bus information.html">Bus Details</a>
+                <a href="bus entry.html">Bus Entries</a>
+                <a href="bus stop warning.html">Bus Stop Warning</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Bus Environment</button>
+            <div class="dropdown-content">
+                <a href="bus_fan_usage.html">Bus Fan Usage</a>
+                <a href="bus_light_usage.html">Bus Light Usage</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Passenger Services Dashboard</button>
+            <div class="dropdown-content">
+                <a href="card balance management.html">Card Balance Management</a>
+                <a href="bus fare tracking.html">Bus Fare Tracking</a>
+                <a href="bus seats availability.html">Real-time Seats Availability</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">4</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+    </div>
+    <h1>Card Balance Management</h1>
+    <div class="balance-container">
+        <div class="balance-input-container">
+            <div class="user-input">
+                <input type="text" id="card-id-input" placeholder="Enter the Card Id">
+            </div>
+            <div class="buttons-container">
+                <button id="balance-input-button" onclick="checkBalance()">Check Balance</button>
+                <button id="top-up-button" onclick="promptTopUp()">Top Up</button>
+                <button id="deduct-button" onclick="promptDeduct()">Deduct Balance</button>
+            </div>
+        </div>
+        <div class="balance-output-box">
+            <div id="balance-output">
+                <!-- Display matching data here -->
+            </div>
+        </div>
+    </div>
+
+
+
+</body>
+<script>
+    // Initialize Firebase with your configuration
+    // Firebase configuration
+    const config = {
+        "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
+        "authDomain": "smart-bus-ab217.firebaseapp.com",
+        "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
+        "storageBucket": "smart-bus-ab217.appspot.com"
+    };
+
+    firebase.initializeApp(config);
+
+    function retrieveAndDisplayData() {
+        // Get the user's input
+        const userInput = document.getElementById("card-id-input").value;
+
+        // Reference to your Firebase database node
+        const balanceRef = firebase.database().ref("Bus Ticketing/Passenger_card_balance");
+
+        // Retrieve data from Firebase
+        balanceRef.once("value")
+            .then(snapshot => {
+                const data = snapshot.val();
+                const matchingEntry = data[userInput];
+
+                displayMatchingData(matchingEntry, userInput);
+
+            })
+            .catch(error => {
+                console.error("Error fetching data:", error);
+            });
+    }
+
+    //display matching card details
+    function displayMatchingData(matchingEntry, cardId) {
+        const outputDiv = document.getElementById("balance-output");
+        outputDiv.innerHTML = "";
+
+        if (!matchingEntry) {
+            outputDiv.innerHTML = "No matching data found.";
+            return;
+        }
+
+        outputDiv.innerHTML = `
+            <p>Card ID: ${cardId}</p>
+            <p>Balance:  $${matchingEntry.Balance}</p>
+            <!-- Add more properties if needed -->
+        `;
+
+    }
+
+    // Prompt the user for the top-up amount
+    function promptTopUp() {
+        const userInput = document.getElementById("card-id-input").value;
+        if (userInput) {
+            const topUpAmount = prompt("Enter the top-up amount:");
+            if (topUpAmount !== null) {
+                topUpBalance(userInput, parseFloat(topUpAmount));
+            }
+        } else {
+            alert("Please enter a Card ID first.");
+        }
+    }
+
+    // Update the balance in Firebase and display it
+    function topUpBalance(cardId, amount) {
+        // Reference to your Firebase database node
+        const balanceRef = firebase.database().ref("Bus Ticketing/Passenger_card_balance");
+
+        balanceRef.once("value")
+            .then(snapshot => {
+                const data = snapshot.val();
+
+                if (data && data[cardId]) {
+                    data[cardId].Balance += amount;
+
+                    // Update the balance in Firebase
+                    balanceRef.set(data)
+                        .then(() => {
+                            // Display the updated balance in HTML
+                            displayMatchingData(data[cardId], cardId);
+                        })
+                        .catch(error => {
+                            console.error("Error updating data:", error);
+                        });
+                } else {
+                    alert("Card ID not found.");
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching data:", error);
+            });
+    }
+
+    // Check balance for the entered Card ID
+    function checkBalance() {
+        const userInput = document.getElementById("card-id-input").value;
+
+        if (userInput) {
+            // Reference to your Firebase database node
+            const balanceRef = firebase.database().ref("Bus Ticketing/Passenger_card_balance");
+
+            balanceRef.once("value")
+                .then(snapshot => {
+                    const data = snapshot.val();
+                    const matchingEntry = data[userInput];
+
+                    displayMatchingData(matchingEntry, userInput);
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                });
+        } else {
+            alert("Please enter a Card ID.");
+        }
+    }
+
+    // Prompt the user for the deduction amount
+    function promptDeduct() {
+        const userInput = document.getElementById("card-id-input").value;
+        if (userInput) {
+            const deductAmount = prompt("Enter the deduction amount:");
+            if (deductAmount !== null) {
+                deductBalance(userInput, parseFloat(deductAmount));
+            }
+        } else {
+            alert("Please enter a Card ID first.");
+        }
+    }
+
+    // Deduct the balance in Firebase and display it
+    function deductBalance(cardId, amount) {
+        // Reference to your Firebase database node
+        const balanceRef = firebase.database().ref("Bus Ticketing/Passenger_card_balance");
+
+        balanceRef.once("value")
+            .then(snapshot => {
+                const data = snapshot.val();
+
+                if (data && data[cardId]) {
+                    if (data[cardId].Balance >= amount) {
+                        data[cardId].Balance -= amount;
+
+                        // Update the balance in Firebase
+                        balanceRef.set(data)
+                            .then(() => {
+                                // Display the updated balance in HTML
+                                displayMatchingData(data[cardId], cardId);
+                            })
+                            .catch(error => {
+                                console.error("Error updating data:", error);
+                            });
+                    } else {
+                        alert("Insufficient balance to deduct.");
+                    }
+                } else {
+                    alert("Card ID not found.");
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching data:", error);
+            });
+    }
+
+
+</script>
+
+</html>
