@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Fan Adjustment Report</title>
+    <link rel="stylesheet" type="text/css" href="pt.css">
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="topnav">
+        <div class="dropdown">
+            <button class="dropbtn">Bus Terminal</button>
+            <div class="dropdown-content">
+                <a href="bus schedule.html">Bus Schedules</a>
+                <a href="bus information.html">Bus Details</a>
+                <a href="bus entry.html">Bus Entries</a>
+                <a href="bus stop warning.html">Bus Stop Warning</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Bus Environment</button>
+            <div class="dropdown-content">
+                <a href="bus_fan_usage.html">Bus Fan Usage</a>
+                <a href="bus_light_usage.html">Bus Light Usage</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">3</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">4</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-container">
+        <div class="filter-section">
+            <!-- Edit the label text here -->
+            <label for="filterDate">Select a Date:</label>
+            <input type="date" id="filterDate">
+            <button id="filterButton">Filter</button>
+        </div>
+    </div>
+
+    <h1>Bus Fan Adjustment Reports</h1>
+
+     <!-- Create a table to display fan changes based on timestamps -->
+     <div class="table-container">
+        <div class="scrollable-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Temperature</th>
+                        <th>Fan Status</th>
+                    </tr>
+                </thead>
+                <tbody id="fanChangesTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Display frequency of fan usage for the selected date -->
+    <div class="frequency-container">
+        <h2>Fan Usage Frequency for Selected Date:</h2>
+        <p id="fanUsageFrequency"></p>
+    </div>
+
+    <script>
+        // Firebase configuration
+        var config = {
+        "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
+        "authDomain": "smart-bus-ab217.firebaseapp.com",
+        "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
+        "storageBucket": "smart-bus-ab217.appspot.com"
+        };
+    
+        // Initialize Firebase
+        firebase.initializeApp(config);
+    
+        // Reference to LED data in Firebase
+        const fanDataRef = firebase.database().ref("Environment_module/Bus_fan");
+
+        // Reference to the table body
+        const tableBody = document.getElementById("fanChangesTableBody");
+
+        // Reference to filter input and button
+        const filterDateInput = document.getElementById("filterDate");
+        const filterButton = document.getElementById("filterButton");
+
+        // Function to filter and show records for the selected date
+        function filterTableByDate(selectedDate) {
+            // Loop through table rows and hide/show based on the selected date
+            const rows = tableBody.getElementsByTagName("tr");
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const dateCell = row.cells[0].textContent;
+
+                // If the date matches the selected date or no date is selected, show the row; otherwise, hide it
+                if (dateCell === selectedDate || selectedDate === "") {
+                    row.style.display = "table-row";
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        }
+
+        // Add a click event listener to the filter button
+        filterButton.addEventListener("click", function() {
+            // Get the selected date from the input field
+            const selectedDate = filterDateInput.value;
+
+            // Call the filter function to show records for the selected date
+            filterTableByDate(selectedDate);
+
+            // Calculate and display fan usage frequency
+            const fanUsageFrequency = calculateFanUsageFrequency(selectedDate);
+            const fanUsageFrequencyContainer = document.querySelector(".frequency-container");
+
+            // Show the frequency container and set the content
+            if (selectedDate) {
+                fanUsageFrequencyContainer.style.display = "block";
+                document.getElementById("fanUsageFrequency").textContent = `Fan turned on ${fanUsageFrequency} times on ${selectedDate}`;
+            } else {
+                fanUsageFrequencyContainer.style.display = "none";
+            }
+        });
+
+        // Function to display fan data in the table
+        function displayFanData(snapshot) {
+            const fanData = snapshot.val();
+
+            // Clear existing table rows
+            tableBody.innerHTML = "";
+
+            // Loop through the fan data and create table rows
+            for (const timestamp in fanData) {
+                if (fanData.hasOwnProperty(timestamp)) {
+                    const data = fanData[timestamp];
+                    const row = document.createElement("tr");
+
+                    // Create table cells
+                    const dateCell = document.createElement("td");
+                    const timeCell = document.createElement("td");
+                    const tempCell = document.createElement("td");
+                    const fanStatusCell = document.createElement("td");
+
+                    // Split timestamp into date and time
+                    const parts = timestamp.split("_");
+                    const date = parts[0];
+                    const time = parts[1];
+
+                    // Set cell values
+                    dateCell.textContent = date;
+                    timeCell.textContent = time;
+                    tempCell.textContent = data.Temperature;
+                    fanStatusCell.textContent = data.FanStatus;
+
+                    // Append cells to the row
+                    row.appendChild(dateCell);
+                    row.appendChild(timeCell);
+                    row.appendChild(tempCell);
+                    row.appendChild(fanStatusCell);
+
+                    // Append row to the table body
+                    tableBody.appendChild(row);
+                }
+            }
+        }
+
+        // Function to calculate and display fan usage frequency
+        function calculateFanUsageFrequency(selectedDate) {
+            let fanUsageCount = 0;
+
+            // Loop through table rows and count fan usage for the selected date
+            const rows = tableBody.getElementsByTagName("tr");
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const dateCell = row.cells[0].textContent;
+
+                if (dateCell === selectedDate) {
+                    const fanStatusCell = row.cells[3].textContent;
+                    if (fanStatusCell === "Fan turned on") {
+                        fanUsageCount++;
+                    }
+                }
+            }
+
+            return fanUsageCount;
+        }
+
+        // Add a click event listener to the filter button
+        filterButton.addEventListener("click", function() {
+            // Get the selected date from the input field
+            const selectedDate = filterDateInput.value;
+
+            // Call the filter function to show records for the selected date
+            filterTableByDate(selectedDate);
+
+            // Calculate and display fan usage frequency
+            const fanUsageFrequency = calculateFanUsageFrequency(selectedDate);
+            document.getElementById("fanUsageFrequency").textContent = `Fan turned on ${fanUsageFrequency} times on ${selectedDate}`;
+        });
+
+        // Listen for changes in fan data
+        fanDataRef.on("value", displayFanData);
+    </script>
+</body>
+</html>
