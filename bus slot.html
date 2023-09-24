@@ -61,6 +61,22 @@
                 <!-- Data rows will be added here -->
             </tbody>
         </table>
+
+        <form id="slot-form">
+            <input type="radio" id="add" name="action" value="add" required>
+            <label class="radio-label" for="add">Add</label>
+            <input type="radio" id="edit" name="action" value="edit" required>
+            <label class="radio-label" for="edit">Edit</label>
+            <input type="radio" id="remove" name="action" value="remove" required>
+            <label class="radio-label" for="remove">Remove</label><br>
+    
+            <label for="slot">Slot:</label>
+            <input type="text" id="slot" required><br>
+            <label for="mac">MAC:</label>
+            <input type="text" id="mac" required><br>
+
+            <button type="submit">Submit</button>
+        </form>
     </div>
 
     <script>
@@ -131,6 +147,57 @@
 
         slotsRef.on("child_removed", snapshot => {
             setListeners();
+        });
+
+        // Handle the form submission to add/edit/remove slot details
+        const slotForm = document.getElementById("slot-form");
+        slotForm.addEventListener("submit", event => {
+            event.preventDefault();
+
+            const action = document.querySelector('input[name="action"]:checked').value;
+            const slot = document.getElementById("slot").value;
+            const mac = document.getElementById("mac").value;
+
+            if (action === "add") {
+                // Add slot details to Firebase
+                slotsRef.child(mac).set({
+                    Slot: slot
+                });
+                alert("Slot details added successfully!");
+            } else if (action === "edit") {
+                // Check if the slot details exist
+                slotsRef.child(mac).once("value", snapshot => {
+                    if (snapshot.exists()) {
+                        // Update slot details in Firebase
+                        slotsRef.child(mac).update({
+                            Slot: slot
+                        });
+                        alert("Slot details updated successfully!");
+                    } else {
+                        alert("MAC address does not exist. Use the Add option to add details.");
+                    }
+                });
+            } else if (action === "remove") {
+                // Check if the slot details exist
+                slotsRef.child(mac).once("value", snapshot => {
+                    if (snapshot.exists()) {
+                        // Remove slot details from Firebase
+                        slotsRef.child(mac).remove()
+                            .then(() => {
+                                alert("Slot details removed successfully!");
+                            })
+                            .catch(error => {
+                                console.error("Error removing slot details:", error);
+                            });
+                    } else {
+                        alert("MAC address does not exist. Nothing to remove.");
+                    }
+                });
+            }
+
+            // Clear the form fields
+            document.getElementById("slot").value = "";
+            document.getElementById("mac").value = "";
         });
     </script>
 </body>
