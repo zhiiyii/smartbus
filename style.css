@@ -111,7 +111,7 @@ button:hover {
 /* Table */
 .scrollable {
     overflow-y: auto;
-    max-height: 330px;
+    max-height: 315px;
     margin: 0px 30px;
 }
 

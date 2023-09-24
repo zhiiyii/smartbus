@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Slots</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
+</head>
+
+<body>
+    <div class="topnav">
+        <div class="dropdown">
+            <button class="dropbtn">Bus Terminal</button>
+            <div class="dropdown-content">
+                <a href="bus information.html">Bus Details</a>
+                <a href="bus slot.html">Bus Slots</a>
+                <a href="bus schedule.html">Bus Schedules</a>
+                <a href="bus entry.html">Bus Entries</a>
+                <a href="bus stop warning.html">Bus Stop Warning</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Bus Environment</button>
+            <div class="dropdown-content">
+                <a href="bus_fan_usage.html">Bus Fan Usage</a>
+                <a href="bus_light_usage.html">Bus Light Usage</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Passenger Services Dashboard</button>
+            <div class="dropdown-content">
+                <a href="card balance management.html">Card Balance Management</a>
+                <a href="bus fare tracking.html">Bus Fare Tracking</a>
+                <a href="bus seats availability.html">Real-time Seats Availability</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">4</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+    </div>
+
+    <h1>Bus Slots</h1>
+
+    <div class="scrollable">
+        <table>
+            <thead>
+                <tr>
+                    <th>Slot</th>
+                    <th>MAC</th>
+                </tr>
+            </thead>
+            <tbody id="slot-details">
+                <!-- Data rows will be added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const config = {
+            "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
+            "authDomain": "smart-bus-ab217.firebaseapp.com",
+            "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
+            "storageBucket": "smart-bus-ab217.appspot.com"
+        };
+
+        firebase.initializeApp(config);
+        const database = firebase.database();
+        const slotsRef = database.ref("Bus Terminal Module/Slot");
+
+        // Function to display slot details
+        function displaySlotDetails(data) {
+            const slotDetails = document.getElementById("slot-details");
+
+            // Clear previous data
+            slotDetails.innerHTML = "";
+
+            // Convert the data into an array of objects for sorting
+            const dataArray = [];
+            for (const macAddress in data) {
+                if (data.hasOwnProperty(macAddress)) {
+                    const slot = data[macAddress].Slot;
+                    dataArray.push({ Slot: slot, Mac: macAddress });
+                }
+            }
+
+            // Sort the data by slot number
+            dataArray.sort((a, b) => a.Slot - b.Slot);
+
+            // Loop through the sorted data and add rows to the table
+            dataArray.forEach(slotInfo => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${slotInfo.Slot}</td>
+                    <td>${slotInfo.Mac}</td>
+                `;
+                slotDetails.appendChild(row);
+            });
+        }
+
+        // Function to set up listeners to auto update table
+        function setListeners() {
+            slotsRef.once("value")
+                .then(snapshot => {
+                    const slotData = snapshot.val();
+                    displaySlotDetails(slotData);
+                })
+                .catch(error => {
+                    console.error("Error fetching slot details:", error);
+                });
+        }
+
+        setListeners();
+
+        // Listen to update the table in real-time
+        slotsRef.on("child_added", snapshot => {
+            setListeners();
+        });
+
+        slotsRef.on("child_changed", snapshot => {
+            setListeners();
+        });
+
+        slotsRef.on("child_removed", snapshot => {
+            setListeners();
+        });
+    </script>
+</body>
+
+</html>
