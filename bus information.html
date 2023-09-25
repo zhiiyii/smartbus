@@ -180,8 +180,8 @@
             const lastIdNumeric = parseInt(lastBusId.slice(1));
             const newIdNumeric = lastIdNumeric + 1;
 
-            // Format the new ID with leading zeros (e.g., B01, B02)
-            const newBusId = `B${newIdNumeric.toString().padStart(2, "0")}`;
+            // Format the new ID with leading zeros (e.g., B001, B002)
+            const newBusId = `B${newIdNumeric.toString().padStart(3, "0")}`;
             return newBusId;
         }
 
@@ -191,7 +191,7 @@
                 .then(snapshot => {
                     const busData = snapshot.val();
                     // Find the last bus ID
-                    let lastBusId = "B00"; // Initialize with a default value
+                    let lastBusId = "B000"; // Initialize with a default value
                     for (const busId in busData) {
                         if (busData.hasOwnProperty(busId) && busId > lastBusId) {
                             lastBusId = busId;
