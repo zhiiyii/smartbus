@@ -5,13 +5,16 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bus Warn</title>
+    <title>Bus Warning</title>
     <link rel="stylesheet" type="text/css" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
+    <script src="firebase config.js"></script>
+    <script src="date filter.js"></script>
 </head>
 
 <body>
+    <!-- Navigation bar to navigate between modules -->
     <div class="topnav">
         <div class="dropdown">
             <button class="dropbtn">Bus Terminal</button>
@@ -49,40 +52,37 @@
 
     <h1>Bus Stop Warning</h1>
 
-    <!-- Filter records -->
-    <form>
-        <label for="date-picker">Filter by Date:</label>
-        <input type="date" id="date-filter" name="date"><br>
-        <button type="button" onclick="applyFilters()">Apply Filters</button>
-    </form>
+    <div class="flex-container">
+        <div class="scrollable" style="flex: 8;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Duration (s)</th>
+                        <th>Slot</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <!-- Data rows will be added here -->
+                </tbody>
+            </table>
+        </div>
 
-    <div class="scrollable">
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Duration (s)</th>
-                    <th>Slot</th>
-                </tr>
-            </thead>
-            <tbody id="table-body">
-                <!-- Data rows will be added here -->
-            </tbody>
-        </table>
+        <!-- Filter records -->
+        <form style="flex: 2;" class="config-form">
+            <h2>Filter by</h2>
+
+            <label for="date-picker">Date:</label>
+            <input type="date" id="date-filter" name="date" style="max-width: 110px;">
+            <br><br>
+
+            <button type="button" onclick="applyFilters()">Apply Filter</button>
+        </form>
     </div>
 
     <script>
-        // Firebase configuration
-        const config = {
-            "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
-            "authDomain": "smart-bus-ab217.firebaseapp.com",
-            "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
-            "storageBucket": "smart-bus-ab217.appspot.com"
-        };
-
-        firebase.initializeApp(config);
-        const database = firebase.database();
+        // Reference to bus warning child
         const stopRef = database.ref("Bus Terminal Module/Stop Warning");
 
         // Function to fetch and display sorted data in a table
@@ -156,32 +156,13 @@
                 });
         }
 
-        // Function to filter data by date
-        function filterByDate(data, date) {
-            const filteredData = {};
-            for (const key in data) {
-                if (data.hasOwnProperty(key) && key === date) {
-                    filteredData[key] = data[key];
-                }
-            }
-            return filteredData;
-        }
-
-        // Function to format the date for Firebase (yyyy-MM-dd)
-        function formatDateForFirebase(inputDate) {
-            const dateParts = inputDate.split("-");
-            if (dateParts.length === 3) {
-                const year = dateParts[0];
-                const month = dateParts[1].padStart(2, "0");
-                const day = dateParts[2].padStart(2, "0");
-                return `${year}-${month}-${day}`;
-            }
-            return "";
-        }
-
         // Function to set up listeners to auto update table when new date or time is added
         function setListeners() {
             stopRef.on("child_added", snapshot => {
+                applyFilters();
+            });
+
+            stopRef.on("child_changed", snapshot => {
                 applyFilters();
             });
         }

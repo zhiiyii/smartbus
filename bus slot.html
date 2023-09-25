@@ -9,9 +9,11 @@
     <link rel="stylesheet" type="text/css" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
+    <script src="firebase config.js"></script>
 </head>
 
 <body>
+    <!-- Navigation bar to navigate between modules -->
     <div class="topnav">
         <div class="dropdown">
             <button class="dropbtn">Bus Terminal</button>
@@ -49,52 +51,54 @@
 
     <h1>Bus Slots</h1>
 
-    <div class="scrollable">
-        <table>
-            <thead>
-                <tr>
-                    <th>Slot</th>
-                    <th>MAC</th>
-                </tr>
-            </thead>
-            <tbody id="slot-details">
-                <!-- Data rows will be added here -->
-            </tbody>
-        </table>
+    <div class="flex-container">
+        <!-- Scrollable table to show bus details -->
+        <div class="scrollable" style="max-height: 235px; flex: 7;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Slot</th>
+                        <th>MAC</th>
+                    </tr>
+                </thead>
+                <tbody id="slot-details-body">
+                    <!-- Data rows will be added here -->
+                </tbody>
+            </table>
+        </div>
 
-        <form id="slot-form">
+        <!-- Form to add, edit or delete slot details -->
+        <form id="slot-form" style="flex: 3;" class="config-form">
+            <!-- Buttons to select an action -->
             <input type="radio" id="add" name="action" value="add" required>
             <label class="radio-label" for="add">Add</label>
+            
             <input type="radio" id="edit" name="action" value="edit" required>
             <label class="radio-label" for="edit">Edit</label>
+            
             <input type="radio" id="remove" name="action" value="remove" required>
-            <label class="radio-label" for="remove">Remove</label><br>
-    
+            <label class="radio-label" for="remove">Remove</label><br><br>
+
+            <!-- Input fields -->
             <label for="slot">Slot:</label>
             <input type="text" id="slot" required><br>
+
             <label for="mac">MAC:</label>
             <input type="text" id="mac" required><br>
 
+            <!-- Submit button -->
+            <br>
             <button type="submit">Submit</button>
         </form>
     </div>
 
     <script>
-        // Firebase configuration
-        const config = {
-            "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
-            "authDomain": "smart-bus-ab217.firebaseapp.com",
-            "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
-            "storageBucket": "smart-bus-ab217.appspot.com"
-        };
-
-        firebase.initializeApp(config);
-        const database = firebase.database();
+        // Reference to slots child
         const slotsRef = database.ref("Bus Terminal Module/Slot");
 
         // Function to display slot details
         function displaySlotDetails(data) {
-            const slotDetails = document.getElementById("slot-details");
+            const slotDetails = document.getElementById("slot-details-body");
 
             // Clear previous data
             slotDetails.innerHTML = "";

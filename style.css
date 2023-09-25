@@ -12,6 +12,11 @@ body {
     padding: 0;
 }
 
+.flex-container {
+    display: flex;
+    flex-direction: row;
+}
+
 /* Navigation Bar */
 .topnav {
     display: flex;
@@ -57,10 +62,17 @@ h1 {
     text-align: center;
 }
 
-/* Filter Form */
+/* Form */
 form {
     margin: 20px;
     text-align: center;
+}
+
+.config-form {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 40px 20px;
+    margin: 0px 20px 0px 0px;
 }
 
 label {
@@ -70,7 +82,7 @@ label {
 input[type="date"],
 input[type="text"] {
     width: 100%;
-    max-width: 250px;
+    max-width: 220px;
     padding: 10px;
     margin-bottom: 10px;
     border: 1px solid #ccc;
@@ -80,6 +92,7 @@ input[type="text"] {
 .radio-label {
     margin-right: 10px;
     font-weight: bold;
+    font-size: large;
 }
 
 input[type="radio"] {
@@ -111,7 +124,7 @@ button:hover {
 /* Table */
 .scrollable {
     overflow-y: auto;
-    max-height: 315px;
+    max-height: 430px;
     margin: 0px 30px;
 }
 

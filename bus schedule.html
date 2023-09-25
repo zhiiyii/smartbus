@@ -9,9 +9,11 @@
     <link rel="stylesheet" type="text/css" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
+    <script src="firebase config.js"></script>
 </head>
 
 <body>
+    <!-- Navigation bar to navigate between modules -->
     <div class="topnav">
         <div class="dropdown">
             <button class="dropbtn">Bus Terminal</button>
@@ -49,61 +51,67 @@
 
     <h1>Bus Schedules</h1>
 
-    <div class="scrollable">
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Schedule ID</th>
-                    <th>Bus ID</th>
-                    <th>Departure Time</th>
-                    <th>Slot</th>
-                    <th>Trip</th>
-                </tr>
-            </thead>
-            <tbody id="schedule-body">
-                <!-- Bus schedule data will be displayed here -->
-            </tbody>
-        </table>
+    <div class="flex-container">
+        <!-- Scrollable table to show schedule details -->
+        <div class="scrollable" style="flex: 7;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Schedule ID</th>
+                        <th>Bus ID</th>
+                        <th>Departure Time</th>
+                        <th>Slot</th>
+                        <th>Trip</th>
+                    </tr>
+                </thead>
+                <tbody id="schedule-body">
+                    <!-- Bus schedule data will be displayed here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Form to add, edit or delete schedule details -->
+        <form id="schedule-form" style="flex: 3;" class="config-form">
+            <!-- Buttons to select an action -->
+            <input type="radio" id="add" name="action" value="add" required>
+            <label class="radio-label" for="add">Add</label>
+
+            <input type="radio" id="edit" name="action" value="edit" required>
+            <label class="radio-label" for="edit">Edit</label>
+
+            <input type="radio" id="remove" name="action" value="remove" required>
+            <label class="radio-label" for="remove">Remove</label><br>
+
+            <!-- Input fields (Some are hidden in remove function) -->
+            <label for="date">Date:</label>
+            <input type="date" id="date" required><br>
+
+            <label for="schedule-id">Schedule ID:</label>
+            <input type="text" id="schedule-id" required><br>
+
+            <div id="hidden-fields" class="form-group">
+                <label for="bus-id">Bus ID:</label>
+                <input type="text" id="bus-id" required><br>
+
+                <label for="departure-time">Departure Time:</label>
+                <input type="text" id="departure-time" required><br>
+
+                <label for="slot">Slot:</label>
+                <input type="text" id="slot" required><br>
+
+                <label for="trip">Trip:</label>
+                <input type="text" id="trip" required>
+            </div>
+
+            <!-- Submit button -->
+            <br>
+            <button type="submit">Submit</button>
+        </form>
     </div>
 
-    <form id="schedule-form">
-        <input type="radio" id="add" name="action" value="add" required>
-        <label class="radio-label" for="add">Add</label>
-        <input type="radio" id="edit" name="action" value="edit" required>
-        <label class="radio-label" for="edit">Edit</label>
-        <input type="radio" id="remove" name="action" value="remove" required>
-        <label class="radio-label" for="remove">Remove</label><br>
-
-        <label for="date">Date:</label>
-        <input type="date" id="date" required><br>
-        <label for="schedule-id">Schedule ID:</label>
-        <input type="text" id="schedule-id" required><br>
-
-        <div id="hidden-fields" class="form-group">
-            <label for="bus-id">Bus ID:</label>
-            <input type="text" id="bus-id" required><br>
-            <label for="departure-time">Departure Time:</label>
-            <input type="text" id="departure-time" required><br>
-            <label for="slot">Slot:</label>
-            <input type="text" id="slot" required><br>
-            <label for="trip">Trip:</label>
-            <input type="text" id="trip" required><br>
-        </div>
-        <button type="submit">Submit</button>
-    </form>
-
     <script>
-        // Firebase configuration
-        const config = {
-            "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
-            "authDomain": "smart-bus-ab217.firebaseapp.com",
-            "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
-            "storageBucket": "smart-bus-ab217.appspot.com"
-        };
-
-        firebase.initializeApp(config);
-        const database = firebase.database();
+        // Reference to bus schedules child
         const scheduleRef = database.ref("Bus Terminal Module/Schedule");
 
         // Function to display bus schedule data in the table
@@ -120,6 +128,7 @@
                     for (const schedule_id in dateData) {
                         if (dateData.hasOwnProperty(schedule_id)) {
                             const schedule = dateData[schedule_id];
+                            
                             const row = document.createElement("tr");
                             row.innerHTML = `
                                 <td>${date}</td>
@@ -129,6 +138,7 @@
                                 <td>${schedule["Slot"]}</td>
                                 <td>${schedule["Trip"]}</td>
                             `;
+
                             scheduleBody.appendChild(row);
                         }
                     }
@@ -197,6 +207,7 @@
             const slot = document.getElementById("slot").value;
             const trip = document.getElementById("trip").value;
 
+            // Add schedule details in firebase
             if (action === "add") {
                 // Add bus schedule to Firebase
                 scheduleRef.child(date).child(schedule_id).set({
@@ -206,7 +217,9 @@
                     "Trip": trip
                 });
                 alert("Bus schedule added successfully!");
-            } else if (action === "edit") {
+            }
+            // Edit schedule details in firebase
+            else if (action === "edit") {
                 // Check if the schedule exists
                 scheduleRef.child(date).child(schedule_id).once("value", snapshot => {
                     if (snapshot.exists()) {
@@ -222,7 +235,9 @@
                         alert("Bus schedule does not exist. Use the Add option to add details.");
                     }
                 });
-            } else if (action === "remove") {
+            }
+            // Remove schedule details in firebase
+            else if (action === "remove") {
                 // Check if the schedule exists
                 scheduleRef.child(date).child(schedule_id).once("value", snapshot => {
                     if (snapshot.exists()) {
