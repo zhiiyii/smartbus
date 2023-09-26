@@ -60,7 +60,7 @@
                     <tr>
                         <th>Date</th>
                         <th>Time</th>
-                        <th>Bus ID</th>
+                        <th>RFID</th>
                     </tr>
                 </thead>
                 <tbody id="table-body">
@@ -76,8 +76,8 @@
             <label for="date-picker">Date:</label>
             <input type="date" id="date-filter" name="date" style="max-width: 110px;"><br>
 
-            <label for="bus-id-filter">Bus ID:</label>
-            <input type="text" id="bus-id-filter" placeholder="Bus ID" style="max-width: 100px;">
+            <label for="rfid-filter">RFID:</label>
+            <input type="text" id="rfid-filter" placeholder="RFID" style="max-width: 100px;">
             <br><br>
 
             <button type="button" onclick="applyFilters()">Apply Filters</button>
@@ -106,8 +106,8 @@
                     const dateData = dataToDisplay[date];
                     for (const time in dateData) {
                         if (dateData.hasOwnProperty(time)) {
-                            const busId = dateData[time]["Bus ID"];
-                            dataArray.push({ date, time, busId });
+                            const rfid = dateData[time]["RFID"];
+                            dataArray.push({ date, time, rfid });
                         }
                     }
                 }
@@ -128,7 +128,7 @@
                 tableRow.innerHTML = `
                     <td>${entry.date}</td>
                     <td>${entry.time}</td>
-                    <td>${entry.busId}</td>
+                    <td>${entry.rfid}</td>
                 `;
                 tableBody.appendChild(tableRow);
             });
@@ -140,7 +140,7 @@
             const dateFilterValue = dateFilterElement.value;
             const formattedDateFilter = formatDateForFirebase(dateFilterValue);
 
-            const busIdFilter = document.getElementById("bus-id-filter").value;
+            const rfidFilter = document.getElementById("rfid-filter").value;
 
             // Retrieve the original data from Firebase
             entriesRef.once("value")
@@ -153,8 +153,8 @@
                         filteredData = filterByDate(filteredData, formattedDateFilter);
                     }
 
-                    if (busIdFilter) {
-                        filteredData = filterByBusId(filteredData, busIdFilter);
+                    if (rfidFilter) {
+                        filteredData = filterByRfid(filteredData, rfidFilter);
                     }
 
                     displaySortedData(filteredData);
@@ -164,15 +164,15 @@
                 });
         }
 
-        // Function to filter data by Bus ID
-        function filterByBusId(data, busId) {
+        // Function to filter data by RFID
+        function filterByRfid(data, rfid) {
             const filteredData = {};
             for (const date in data) {
                 if (data.hasOwnProperty(date)) {
                     const dateData = data[date];
                     filteredData[date] = {};
                     for (const time in dateData) {
-                        if (dateData.hasOwnProperty(time) && dateData[time]["Bus ID"] === busId) {
+                        if (dateData.hasOwnProperty(time) && dateData[time]["RFID"].includes(rfid)) {
                             filteredData[date][time] = dateData[time];
                         }
                     }

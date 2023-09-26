@@ -49,65 +49,75 @@
         </div>
     </div>
 
-    <h1>Bus Details</h1>
-
     <div class="flex-container">
-        <!-- Scrollable table to show bus details -->
-        <div class="scrollable" style="flex: 7;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Bus ID</th>
-                        <th>RFID</th>
-                        <th>Company</th>
-                        <th>Plate Number</th>
-                    </tr>
-                </thead>
-                <tbody id="bus-details-body">
-                    <!-- Data rows will be added here -->
-                </tbody>
-            </table>
+        <div style="flex: 6.7;">
+            <h1>Bus Details</h1>
+
+            <!-- Scrollable table to show bus details -->
+            <div class="scrollable">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Bus ID</th>
+                            <th>RFID</th>
+                            <th>Company</th>
+                            <th>Plate Number</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bus-details-body">
+                        <!-- Data rows will be added here -->
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- Form to add, edit or delete bus details -->
-        <form id="bus-details-form" style="flex: 3;" class="config-form">
-            <!-- Buttons to select an action -->
-            <input type="radio" id="add" name="action" value="add" required>
-            <label class="radio-label" for="add">Add</label>
+        <div style="flex: 3.3;">
+            <form class="config-form">
+                <label for="bus-id-filter">Filter by Bus ID:</label>
+                <input type="text" id="bus-id-filter" placeholder="Bus ID" style="max-width: 100px;">
+                <button type="button" onclick="applyFilters()" style="margin-left: 10px;">Apply</button>
+            </form>
 
-            <input type="radio" id="edit" name="action" value="edit" required>
-            <label class="radio-label" for="edit">Edit</label>
+            <form id="bus-details-form" class="config-form">
+                <!-- Buttons to select an action -->
+                <input type="radio" id="add" name="action" value="add" required>
+                <label class="radio-label" for="add">Add</label>
 
-            <input type="radio" id="remove" name="action" value="remove" required>
-            <label class="radio-label" for="remove">Remove</label><br><br>
+                <input type="radio" id="edit" name="action" value="edit" required>
+                <label class="radio-label" for="edit">Edit</label>
 
-            <!-- Input fields (Some are hidden in remove function) -->
-            <div id="add-bus">
-                <label for="generated-bus-id">Bus ID:</label>
-                <span id="generated-bus-id"></span>
-                <br><br>
-            </div>
+                <input type="radio" id="remove" name="action" value="remove" required>
+                <label class="radio-label" for="remove">Remove</label><br><br>
 
-            <div id="edit-remove-bus">
-                <label for="bus-id">Bus ID:</label>
-                <input type="text" id="bus-id">
-            </div>
+                <!-- Input fields (Some are hidden in remove function) -->
+                <div id="add-bus">
+                    <label for="generated-bus-id">Bus ID:</label>
+                    <span id="generated-bus-id"></span>
+                    <br><br>
+                </div>
 
-            <div id="hidden-fields">
-                <label for="rfid">RFID:</label>
-                <input type="text" id="rfid" name="rfid" required><br>
+                <div id="edit-remove-bus">
+                    <label for="bus-id">Bus ID:</label>
+                    <input type="text" id="bus-id">
+                </div>
 
-                <label for="company">Company:</label>
-                <input type="text" id="company" name="company" required><br>
+                <div id="hidden-fields">
+                    <label for="rfid">RFID:</label>
+                    <input type="text" id="rfid" name="rfid" required><br>
 
-                <label for="plate-number">Plate Number:</label>
-                <input type="text" id="plate-number" name="plate-number" required>
-            </div>
+                    <label for="company">Company:</label>
+                    <input type="text" id="company" name="company" required><br>
 
-            <!-- Submit button -->
-            <br>
-            <button type="submit">Submit</button>
-        </form>
+                    <label for="plate-number">Plate Number:</label>
+                    <input type="text" id="plate-number" name="plate-number" required>
+                </div>
+
+                <!-- Submit button -->
+                <br>
+                <button type="submit">Submit</button>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -208,8 +218,44 @@
                 });
         }
 
+        // Function to apply filters
+        function applyFilters() {
+            const busIdFilter = document.getElementById("bus-id-filter").value.toUpperCase().trim();
+
+            // Retrieve the original data from Firebase
+            busDetailsRef.once("value")
+                .then(snapshot => {
+                    const data = snapshot.val();
+
+                    let filteredData = data;
+
+                    if (busIdFilter) {
+                        filteredData = filterByBusId(filteredData, busIdFilter);
+                    }
+
+                    displayBusDetails(filteredData);
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                });
+        }
+
+        // Function to filter data by Bus ID
+        function filterByBusId(data, busIdFilter) {
+            const filteredData = {};
+
+            for (const busId in data) {
+                if (data.hasOwnProperty(busId) && busId === busIdFilter) {
+                    filteredData[busId] = data[busId];
+                }
+            }
+
+            return filteredData;
+        }
+
+
         // Function to set up listeners to auto-update table
-        function setListeners() {
+        function updateTableListener() {
             busDetailsRef.once("value")
                 .then(snapshot => {
                     const busData = snapshot.val();
@@ -220,7 +266,7 @@
                 });
         }
 
-        setListeners();
+        updateTableListener();
 
         // Listen for changes in the action radio buttons
         const actionRadios = document.querySelectorAll('input[name="action"]');
@@ -228,9 +274,8 @@
             radio.addEventListener("change", toggleInputFields);
         });
 
-        // Handle the form submission to add/edit/remove bus details
-        const busDetailsForm = document.getElementById("bus-details-form");
-        busDetailsForm.addEventListener("submit", event => {
+        // Function to add/edit/remove bus details
+        async function handleFormSubmission(event) {
             event.preventDefault();
 
             const busIdForAdd = document.getElementById("generated-bus-id").textContent;
@@ -239,6 +284,34 @@
             const company = document.getElementById("company").value;
             const plateNumber = document.getElementById("plate-number").value;
             const action = document.querySelector('input[name="action"]:checked').value;
+
+            // Input data validations
+            if (!isValidBusId(busId) && action != "add") {
+                alert("Invalid Bus ID format.");
+                return;
+            }
+
+            if (!isValidRfid(rfid) && action != "remove") {
+                alert("Invalid RFID format.");
+                return;
+            }
+
+            if (!isValidPlateNumber(plateNumber) && action != "remove") {
+                alert("Invalid Plate Number format.");
+                return;
+            }
+
+            const isRfidValid = await isExistRfid(rfid);
+            if (isRfidValid) {
+                alert("RFID exists.");
+                return;
+            }
+
+            const isPlateNumberValid = await isExistPlateNumber(plateNumber);
+            if (isPlateNumberValid) {
+                alert("Plate Number exists.");
+                return;
+            }
 
             if (action === "add") {
                 addBusDetails(busIdForAdd, rfid, company, plateNumber);
@@ -255,22 +328,52 @@
 
             toggleInputFields();
             updateDisplayedBusId();
-        });
+        }
 
-        // Listen to update the table in real-time
-        busDetailsRef.on("child_added", snapshot => {
-            setListeners();
-            updateDisplayedBusId();
-        });
+        // Function to validate Bus ID format (e.g., "B002")
+        function isValidBusId(busId) {
+            const regex = /^B\d{3}$/; // Should start with 'B' followed by 3 digits
+            return regex.test(busId);
+        }
 
-        busDetailsRef.on("child_changed", snapshot => {
-            setListeners();
-        });
+        // Function to validate RFID format (e.g., "0231323030303844323441383203")
+        function isValidRfid(rfid) {
+            const regex = /^\d{28}$/; // Should be 28 numbers
+            return regex.test(rfid);
+        }
 
-        busDetailsRef.on("child_removed", snapshot => {
-            setListeners();
-            updateDisplayedBusId();
-        });
+        // Function to validate Plate Number format (e.g., "VDC1234")
+        function isValidPlateNumber(plateNumber) {
+            const regex = /^(?=(?:[^A-Za-z]*[A-Za-z]){2})(?=\D*\d)[A-Za-z0-9]{1,7}$/;
+            // Should contain at least 2 alphabets and 1 number in 7 char for buses
+            return regex.test(plateNumber);
+        }
+
+        // Function to check if an RFID exists in the Bus Details reference
+        function isExistRfid(rfid) {
+            // Query the database to find if any bus has the given RFID
+            return busDetailsRef.orderByChild("RFID").equalTo(rfid).once("value")
+                .then(snapshot => {
+                    return snapshot.exists();
+                })
+                .catch(error => {
+                    console.error("Error checking RFID existence:", error);
+                    return false;
+                });
+        }
+
+        // Function to check if a Plate Number exists in the Bus Details reference
+        function isExistPlateNumber(plateNumber) {
+            // Query the database to find if any bus has the given Plate Number
+            return busDetailsRef.orderByChild("Plate Number").equalTo(plateNumber).once("value")
+                .then(snapshot => {
+                    return snapshot.exists();
+                })
+                .catch(error => {
+                    console.error("Error checking Plate Number existence:", error);
+                    return false;
+                });
+        }
 
         // Firebase functions for adding, editing, and removing bus details
         function addBusDetails(busId, rfid, company, plateNumber) {
@@ -307,6 +410,24 @@
                 }
             });
         }
+
+        const busDetailsForm = document.getElementById("bus-details-form");
+        busDetailsForm.addEventListener("submit", handleFormSubmission);
+
+        // Listen to update the table in real-time
+        busDetailsRef.on("child_added", snapshot => {
+            updateTableListener();
+            updateDisplayedBusId();
+        });
+
+        busDetailsRef.on("child_changed", snapshot => {
+            updateTableListener();
+        });
+
+        busDetailsRef.on("child_removed", snapshot => {
+            updateTableListener();
+            updateDisplayedBusId();
+        });
     </script>
 </body>
 
