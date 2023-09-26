@@ -82,12 +82,13 @@
             <label class="radio-label" for="remove">Remove</label><br><br>
 
             <!-- Input fields (Some are hidden in remove function) -->
-            <div id="add-bus" style="display: block;">
-                <label>Bus ID:</label>
+            <div id="add-bus">
+                <label for="generated-bus-id">Bus ID:</label>
                 <span id="generated-bus-id"></span>
                 <br><br>
             </div>
-            <div id="edit-remove-bus" style="display: none;">
+
+            <div id="edit-remove-bus">
                 <label for="bus-id">Bus ID:</label>
                 <input type="text" id="bus-id">
             </div>
@@ -127,17 +128,22 @@
                     const company = data[busId].Company;
                     const plateNumber = data[busId]["Plate Number"];
 
-                    const row = document.createElement("tr");
-                    row.innerHTML = `
-                        <td>${busId}</td>
-                        <td>${rfid}</td>
-                        <td>${company}</td>
-                        <td>${plateNumber}</td>
-                    `;
-
+                    const row = createBusDetailsRow(busId, rfid, company, plateNumber);
                     busDetailsBody.appendChild(row);
                 }
             }
+        }
+
+        // Function to create a table row for bus details
+        function createBusDetailsRow(busId, rfid, company, plateNumber) {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${busId}</td>
+                <td>${rfid}</td>
+                <td>${company}</td>
+                <td>${plateNumber}</td>
+            `;
+            return row;
         }
 
         // Function to toggle the visibility of input fields based on the selected action
@@ -176,11 +182,8 @@
 
         // Function to generate a new bus ID based on the last ID in Firebase
         function generateNewBusId(lastBusId) {
-            // Extract the numeric part of the last ID and increment it
             const lastIdNumeric = parseInt(lastBusId.slice(1));
             const newIdNumeric = lastIdNumeric + 1;
-
-            // Format the new ID with leading zeros (e.g., B001, B002)
             const newBusId = `B${newIdNumeric.toString().padStart(3, "0")}`;
             return newBusId;
         }
@@ -190,7 +193,6 @@
             busDetailsRef.once("value")
                 .then(snapshot => {
                     const busData = snapshot.val();
-                    // Find the last bus ID
                     let lastBusId = "B000"; // Initialize with a default value
                     for (const busId in busData) {
                         if (busData.hasOwnProperty(busId) && busId > lastBusId) {
@@ -198,7 +200,6 @@
                         }
                     }
 
-                    // Generate a new bus ID and display it
                     const newBusId = generateNewBusId(lastBusId);
                     document.getElementById("generated-bus-id").textContent = newBusId;
                 })
@@ -207,7 +208,7 @@
                 });
         }
 
-        // Function to set up listeners to auto update table
+        // Function to set up listeners to auto-update table
         function setListeners() {
             busDetailsRef.once("value")
                 .then(snapshot => {
@@ -239,49 +240,19 @@
             const plateNumber = document.getElementById("plate-number").value;
             const action = document.querySelector('input[name="action"]:checked').value;
 
-            // Add bus details in firebase
             if (action === "add") {
-                busDetailsRef.child(busIdForAdd).set({
-                    RFID: rfid,
-                    Company: company,
-                    "Plate Number": plateNumber
-                });
-                alert("Bus details added successfully!");
-            }
-            // Edit bus details in firebase
-            else if (action === "edit") {
-                busDetailsRef.child(busId).once("value", snapshot => {
-                    if (snapshot.exists()) {
-                        busDetailsRef.child(busId).update({
-                            RFID: rfid,
-                            Company: company,
-                            "Plate Number": plateNumber
-                        });
-                        alert("Bus details updated successfully!");
-                    } else {
-                        alert("Bus ID does not exist. Use the Add option to add details.");
-                    }
-                });
-            }
-            // Remove bus details in firebase
-            else if (action === "remove") {
-                busDetailsRef.child(busId).once("value", snapshot => {
-                    if (snapshot.exists()) {
-                        busDetailsRef.child(busId).remove();
-                        alert("Bus details removed successfully!");
-                    } else {
-                        alert("Bus ID does not exist. Nothing to remove.");
-                    }
-                });
+                addBusDetails(busIdForAdd, rfid, company, plateNumber);
+            } else if (action === "edit") {
+                editBusDetails(busId, rfid, company, plateNumber);
+            } else if (action === "remove") {
+                removeBusDetails(busId);
             }
 
-            // Clear the form fields
             document.getElementById("bus-id").value = "";
             document.getElementById("rfid").value = "";
             document.getElementById("company").value = "";
             document.getElementById("plate-number").value = "";
 
-            // Update input field visibility
             toggleInputFields();
             updateDisplayedBusId();
         });
@@ -300,6 +271,42 @@
             setListeners();
             updateDisplayedBusId();
         });
+
+        // Firebase functions for adding, editing, and removing bus details
+        function addBusDetails(busId, rfid, company, plateNumber) {
+            busDetailsRef.child(busId).set({
+                RFID: rfid,
+                Company: company,
+                "Plate Number": plateNumber
+            });
+            alert("Bus details added successfully!");
+        }
+
+        function editBusDetails(busId, rfid, company, plateNumber) {
+            busDetailsRef.child(busId).once("value", snapshot => {
+                if (snapshot.exists()) {
+                    busDetailsRef.child(busId).update({
+                        RFID: rfid,
+                        Company: company,
+                        "Plate Number": plateNumber
+                    });
+                    alert("Bus details updated successfully!");
+                } else {
+                    alert("Bus ID does not exist. Use the Add option to add details.");
+                }
+            });
+        }
+
+        function removeBusDetails(busId) {
+            busDetailsRef.child(busId).once("value", snapshot => {
+                if (snapshot.exists()) {
+                    busDetailsRef.child(busId).remove();
+                    alert("Bus details removed successfully!");
+                } else {
+                    alert("Bus ID does not exist. Nothing to remove.");
+                }
+            });
+        }
     </script>
 </body>
 

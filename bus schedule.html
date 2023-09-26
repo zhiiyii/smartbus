@@ -10,6 +10,13 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
     <script src="firebase config.js"></script>
+    <style>
+        input[type="date"],
+        input[type="time"],
+        input[type="text"] {
+            max-width: 160px;
+        }
+    </style>
 </head>
 
 <body>
@@ -95,7 +102,7 @@
                 <input type="text" id="bus-id" required><br>
 
                 <label for="departure-time">Departure Time:</label>
-                <input type="text" id="departure-time" required><br>
+                <input type="time" id="departure-time" required><br>
 
                 <label for="slot">Slot:</label>
                 <input type="text" id="slot" required><br>
@@ -111,7 +118,6 @@
     </div>
 
     <script>
-        // Reference to bus schedules child
         const scheduleRef = database.ref("Bus Terminal Module/Schedule");
 
         // Function to display bus schedule data in the table
@@ -128,17 +134,8 @@
                     for (const schedule_id in dateData) {
                         if (dateData.hasOwnProperty(schedule_id)) {
                             const schedule = dateData[schedule_id];
-                            
-                            const row = document.createElement("tr");
-                            row.innerHTML = `
-                                <td>${date}</td>
-                                <td>${schedule_id}</td>
-                                <td>${schedule["Bus ID"]}</td>
-                                <td>${schedule["Departure Time"]}</td>
-                                <td>${schedule["Slot"]}</td>
-                                <td>${schedule["Trip"]}</td>
-                            `;
 
+                            const row = createScheduleRow(date, schedule_id, schedule);
                             scheduleBody.appendChild(row);
                         }
                     }
@@ -146,12 +143,23 @@
             }
         }
 
-        // Function to fetch and display bus schedule data from current date
-        function fetchAndDisplayBusSchedule() {
-            // Get the current date in the format YYYY-MM-DD
-            const currentDate = new Date().toISOString().slice(0, 10);
+        // Function to create a table row for a schedule
+        function createScheduleRow(date, schedule_id, schedule) {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${date}</td>
+                <td>${schedule_id}</td>
+                <td>${schedule["Bus ID"]}</td>
+                <td>${schedule["Departure Time"]}</td>
+                <td>${schedule["Slot"]}</td>
+                <td>${schedule["Trip"]}</td>
+            `;
+            return row;
+        }
 
-            // Query the schedules starting from the current date
+        // Function to fetch and display bus schedule data from the current date
+        function fetchAndDisplayBusSchedule() {
+            const currentDate = new Date().toISOString().slice(0, 10);
             scheduleRef.orderByKey().startAt(currentDate).once("value")
                 .then(snapshot => {
                     const scheduleData = snapshot.val();
@@ -186,6 +194,106 @@
             }
         }
 
+        // Function to handle form submission
+        function handleFormSubmission(event) {
+            event.preventDefault();
+
+            const action = document.querySelector('input[name="action"]:checked').value;
+            const date = document.getElementById("date").value;
+            const schedule_id = document.getElementById("schedule-id").value;
+            const busId = document.getElementById("bus-id").value;
+            const departureTimeInput = document.getElementById("departure-time").value;
+            const slot = document.getElementById("slot").value;
+            const trip = document.getElementById("trip").value;
+
+            const departureTime = formatTime(departureTimeInput);
+
+            if (!departureTime && action != "remove") {
+                alert("Invalid departure time format. Please use the format 'HH:MM'.");
+                return;
+            }
+
+            if (action === "add") {
+                addBusSchedule(date, schedule_id, busId, departureTime, slot, trip);
+            } else if (action === "edit") {
+                editBusSchedule(date, schedule_id, busId, departureTime, slot, trip);
+            } else if (action === "remove") {
+                removeBusSchedule(date, schedule_id);
+            }
+
+            document.getElementById("schedule-form").reset();
+            toggleInputFields();
+            fetchAndDisplayBusSchedule();
+        }
+
+        // Function to format the input time
+        function formatTime(inputTime) {
+            const parts = inputTime.split(":");
+            const hours = parseInt(parts[0]);
+            const minutes = parseInt(parts[1]);
+
+            if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+                const formattedHours = hours.toString().padStart(2, "0");
+                const formattedMinutes = minutes.toString().padStart(2, "0");
+                return `${formattedHours}:${formattedMinutes}`;
+            } else {
+                return null; // Invalid time format
+            }
+        }
+
+        // Function to add a bus schedule to Firebase
+        function addBusSchedule(date, schedule_id, busId, departureTime, slot, trip) {
+            // Check if the schedule with the same schedule_id already exists
+            scheduleRef.child(date).child(schedule_id).once("value", snapshot => {
+                if (snapshot.exists()) {
+                    alert("Bus schedule with this Schedule ID already exists. Please use a different Schedule ID.");
+                } else {
+                    // If the schedule doesn't exist, add it to Firebase
+                    scheduleRef.child(date).child(schedule_id).set({
+                        "Bus ID": busId,
+                        "Departure Time": departureTime,
+                        "Slot": slot,
+                        "Trip": trip
+                    });
+                    alert("Bus schedule added successfully!");
+                }
+            });
+        }
+
+        // Function to edit a bus schedule in Firebase
+        function editBusSchedule(date, schedule_id, busId, departureTime, slot, trip) {
+            scheduleRef.child(date).child(schedule_id).once("value", snapshot => {
+                if (snapshot.exists()) {
+                    scheduleRef.child(date).child(schedule_id).update({
+                        "Bus ID": busId,
+                        "Departure Time": departureTime,
+                        "Slot": slot,
+                        "Trip": trip
+                    });
+                    alert("Bus schedule updated successfully!");
+                } else {
+                    alert("Bus schedule does not exist. Use the Add option to add details.");
+                }
+            });
+        }
+
+        // Function to remove a bus schedule from Firebase
+        function removeBusSchedule(date, schedule_id) {
+            scheduleRef.child(date).child(schedule_id).once("value", snapshot => {
+                if (snapshot.exists()) {
+                    scheduleRef.child(date).child(schedule_id).remove()
+                        .then(() => {
+                            alert("Bus schedule removed successfully!");
+                        })
+                        .catch(error => {
+                            console.error("Error removing bus schedule:", error);
+                        });
+                } else {
+                    alert("Bus schedule does not exist. Nothing to remove.");
+                }
+            });
+        }
+
         // Initial calls
         fetchAndDisplayBusSchedule();
 
@@ -194,76 +302,19 @@
             radio.addEventListener("change", toggleInputFields);
         });
 
-        // Function to handle the form submission for add, edit, and remove
         const scheduleForm = document.getElementById("schedule-form");
-        scheduleForm.addEventListener("submit", event => {
-            event.preventDefault();
+        scheduleForm.addEventListener("submit", handleFormSubmission);
 
-            const action = document.querySelector('input[name="action"]:checked').value;
-            const date = document.getElementById("date").value;
-            const schedule_id = document.getElementById("schedule-id").value;
-            const busId = document.getElementById("bus-id").value;
-            const departureTime = document.getElementById("departure-time").value;
-            const slot = document.getElementById("slot").value;
-            const trip = document.getElementById("trip").value;
+        // Listen for real-time updates
+        scheduleRef.on("child_added", snapshot => {
+            fetchAndDisplayBusSchedule();
+        });
 
-            // Add schedule details in firebase
-            if (action === "add") {
-                // Add bus schedule to Firebase
-                scheduleRef.child(date).child(schedule_id).set({
-                    "Bus ID": busId,
-                    "Departure Time": departureTime,
-                    "Slot": slot,
-                    "Trip": trip
-                });
-                alert("Bus schedule added successfully!");
-            }
-            // Edit schedule details in firebase
-            else if (action === "edit") {
-                // Check if the schedule exists
-                scheduleRef.child(date).child(schedule_id).once("value", snapshot => {
-                    if (snapshot.exists()) {
-                        // Update bus schedule in Firebase
-                        scheduleRef.child(date).child(schedule_id).update({
-                            "Bus ID": busId,
-                            "Departure Time": departureTime,
-                            "Slot": slot,
-                            "Trip": trip
-                        });
-                        alert("Bus schedule updated successfully!");
-                    } else {
-                        alert("Bus schedule does not exist. Use the Add option to add details.");
-                    }
-                });
-            }
-            // Remove schedule details in firebase
-            else if (action === "remove") {
-                // Check if the schedule exists
-                scheduleRef.child(date).child(schedule_id).once("value", snapshot => {
-                    if (snapshot.exists()) {
-                        // Remove bus schedule from Firebase
-                        scheduleRef.child(date).child(schedule_id).remove()
-                            .then(() => {
-                                alert("Bus schedule removed successfully!");
-                            })
-                            .catch(error => {
-                                console.error("Error removing bus schedule:", error);
-                            });
-                    } else {
-                        alert("Bus schedule does not exist. Nothing to remove.");
-                    }
-                });
-            }
+        scheduleRef.on("child_changed", snapshot => {
+            fetchAndDisplayBusSchedule();
+        });
 
-            // Clear the form fields
-            document.getElementById("date").value = "";
-            document.getElementById("schedule-id").value = "";
-            document.getElementById("bus-id").value = "";
-            document.getElementById("departure-time").value = "";
-            document.getElementById("slot").value = "";
-            document.getElementById("trip").value = "";
-
-            toggleInputFields();
+        scheduleRef.on("child_removed", snapshot => {
             fetchAndDisplayBusSchedule();
         });
     </script>

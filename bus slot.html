@@ -58,7 +58,7 @@
                 <thead>
                     <tr>
                         <th>Slot</th>
-                        <th>MAC</th>
+                        <th>MAC Address</th>
                     </tr>
                 </thead>
                 <tbody id="slot-details-body">
@@ -72,16 +72,24 @@
             <!-- Buttons to select an action -->
             <input type="radio" id="add" name="action" value="add" required>
             <label class="radio-label" for="add">Add</label>
-            
+
             <input type="radio" id="edit" name="action" value="edit" required>
             <label class="radio-label" for="edit">Edit</label>
-            
+
             <input type="radio" id="remove" name="action" value="remove" required>
             <label class="radio-label" for="remove">Remove</label><br><br>
 
             <!-- Input fields -->
-            <label for="slot">Slot:</label>
-            <input type="text" id="slot" required><br>
+            <div id="add-slot">
+                <label for="generated-slot-number">Slot:</label>
+                <span id="generated-slot-number"></span>
+                <br><br>
+            </div>
+
+            <div id="edit-remove-slot">
+                <label for="slot">Slot:</label>
+                <input type="text" id="slot"><br>
+            </div>
 
             <label for="mac">MAC:</label>
             <input type="text" id="mac" required><br>
@@ -104,26 +112,64 @@
             slotDetails.innerHTML = "";
 
             // Convert the data into an array of objects for sorting
-            const dataArray = [];
-            for (const macAddress in data) {
-                if (data.hasOwnProperty(macAddress)) {
-                    const slot = data[macAddress].Slot;
-                    dataArray.push({ Slot: slot, Mac: macAddress });
-                }
-            }
+            const dataArray = Object.keys(data).map(slot => ({ Slot: slot, MAC: data[slot].MAC }));
 
             // Sort the data by slot number
             dataArray.sort((a, b) => a.Slot - b.Slot);
 
             // Loop through the sorted data and add rows to the table
             dataArray.forEach(slotInfo => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${slotInfo.Slot}</td>
-                    <td>${slotInfo.Mac}</td>
-                `;
+                const row = createSlotRow(slotInfo);
                 slotDetails.appendChild(row);
             });
+        }
+
+        // Function to create a table row for slot details
+        function createSlotRow(slotInfo) {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${slotInfo.Slot}</td>
+                <td>${slotInfo.MAC}</td>
+            `;
+            return row;
+        }
+
+        // Function to toggle the visibility of input fields based on the selected action
+        function toggleInputFields() {
+            const action = document.querySelector('input[name="action"]:checked').value;
+            const addSlot = document.getElementById("add-slot");
+            const editRemoveSlot = document.getElementById("edit-remove-slot");
+            const slotInput = document.getElementById("slot");
+
+            if (action === "add") {
+                addSlot.style.display = "block";
+                editRemoveSlot.style.display = "none";
+                slotInput.removeAttribute("required");
+            } else {
+                addSlot.style.display = "none";
+                editRemoveSlot.style.display = "block";
+                slotInput.setAttribute("required", true);
+            }
+        }
+
+        // Function to generate the next available slot number
+        function generateNextAvailableSlot(data) {
+            const slotNumbers = Object.keys(data).map(Number);
+            const maxSlotNumber = Math.max(...slotNumbers);
+            return maxSlotNumber + 1;
+        }
+
+        // Function to update the displayed slot number
+        function updateDisplayedSlotNumber() {
+            slotsRef.once("value")
+                .then(snapshot => {
+                    const slotData = snapshot.val();
+                    const nextSlotNumber = generateNextAvailableSlot(slotData);
+                    document.getElementById("generated-slot-number").textContent = nextSlotNumber;
+                })
+                .catch(error => {
+                    console.error("Error fetching slot details:", error);
+                });
         }
 
         // Function to set up listeners to auto update table
@@ -138,11 +184,91 @@
                 });
         }
 
-        setListeners();
+        // Function to validate MAC address format
+        function isValidMacAddress(mac) {
+            const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+            return macRegex.test(mac);
+        }
 
-        // Listen to update the table in real-time
+        // Function to handle form submission
+        function handleFormSubmission(event) {
+            event.preventDefault();
+
+            const action = document.querySelector('input[name="action"]:checked').value;
+            const slotForAdd = document.getElementById("generated-slot-number").textContent;
+            const slot = document.getElementById("slot").value;
+            const mac = document.getElementById("mac").value;
+
+            if (!isValidMacAddress(mac)) {
+                alert("Invalid MAC address format. Please use the format 'xx:xx:xx:xx:xx:xx'.");
+                return;
+            }
+
+            if (action === "add") {
+                addSlotDetails(slotForAdd, mac);
+            } else if (action === "edit") {
+                editSlotDetails(slot, mac);
+            } else if (action === "remove") {
+                removeSlotDetails(slot);
+            }
+
+            document.getElementById("slot-form").reset();
+            toggleInputFields();
+            setListeners();
+            updateDisplayedSlotNumber();
+        }
+
+        // Function to add slot details to Firebase
+        function addSlotDetails(slot, mac) {
+            slotsRef.child(slot).set({ MAC: mac });
+            alert("Slot details added successfully!");
+        }
+
+        // Function to edit slot details in Firebase
+        function editSlotDetails(slot, mac) {
+            slotsRef.child(slot).once("value", snapshot => {
+                if (snapshot.exists()) {
+                    slotsRef.child(slot).update({ MAC: mac });
+                    alert("Slot details updated successfully!");
+                } else {
+                    alert("Slot does not exist. Use the Add option to add details.");
+                }
+            });
+        }
+
+        // Function to remove slot details from Firebase
+        function removeSlotDetails(slot) {
+            slotsRef.child(slot).once("value", snapshot => {
+                if (snapshot.exists()) {
+                    slotsRef.child(slot).update({ MAC: "" })
+                        .then(() => {
+                            alert("Slot details removed successfully!");
+                        })
+                        .catch(error => {
+                            console.error("Error removing slot details:", error);
+                        });
+                } else {
+                    alert("Slot does not exist. Nothing to remove.");
+                }
+            });
+        }
+
+        // Initial calls
+        setListeners();
+        updateDisplayedSlotNumber();
+
+        const actionRadios = document.querySelectorAll('input[name="action"]');
+        actionRadios.forEach(radio => {
+            radio.addEventListener("change", toggleInputFields);
+        });
+
+        const slotForm = document.getElementById("slot-form");
+        slotForm.addEventListener("submit", handleFormSubmission);
+
+        // Listen for real-time updates
         slotsRef.on("child_added", snapshot => {
             setListeners();
+            updateDisplayedSlotNumber();
         });
 
         slotsRef.on("child_changed", snapshot => {
@@ -151,59 +277,10 @@
 
         slotsRef.on("child_removed", snapshot => {
             setListeners();
-        });
-
-        // Handle the form submission to add/edit/remove slot details
-        const slotForm = document.getElementById("slot-form");
-        slotForm.addEventListener("submit", event => {
-            event.preventDefault();
-
-            const action = document.querySelector('input[name="action"]:checked').value;
-            const slot = document.getElementById("slot").value;
-            const mac = document.getElementById("mac").value;
-
-            if (action === "add") {
-                // Add slot details to Firebase
-                slotsRef.child(mac).set({
-                    Slot: slot
-                });
-                alert("Slot details added successfully!");
-            } else if (action === "edit") {
-                // Check if the slot details exist
-                slotsRef.child(mac).once("value", snapshot => {
-                    if (snapshot.exists()) {
-                        // Update slot details in Firebase
-                        slotsRef.child(mac).update({
-                            Slot: slot
-                        });
-                        alert("Slot details updated successfully!");
-                    } else {
-                        alert("MAC address does not exist. Use the Add option to add details.");
-                    }
-                });
-            } else if (action === "remove") {
-                // Check if the slot details exist
-                slotsRef.child(mac).once("value", snapshot => {
-                    if (snapshot.exists()) {
-                        // Remove slot details from Firebase
-                        slotsRef.child(mac).remove()
-                            .then(() => {
-                                alert("Slot details removed successfully!");
-                            })
-                            .catch(error => {
-                                console.error("Error removing slot details:", error);
-                            });
-                    } else {
-                        alert("MAC address does not exist. Nothing to remove.");
-                    }
-                });
-            }
-
-            // Clear the form fields
-            document.getElementById("slot").value = "";
-            document.getElementById("mac").value = "";
+            updateDisplayedSlotNumber();
         });
     </script>
+
 </body>
 
 </html>

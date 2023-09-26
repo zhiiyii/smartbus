@@ -53,6 +53,7 @@
     <h1>Bus Entries</h1>
 
     <div class="flex-container">
+        <!-- Scrollable table to show bus entries -->
         <div class="scrollable" style="flex: 8;">
             <table>
                 <thead>
@@ -71,7 +72,7 @@
         <!-- Filter records -->
         <form style="flex: 2;" class="config-form">
             <h2>Filter by</h2>
-            
+
             <label for="date-picker">Date:</label>
             <input type="date" id="date-filter" name="date" style="max-width: 110px;"><br>
 
@@ -86,10 +87,10 @@
     <script>
         // Reference to bus entry child
         const entriesRef = database.ref("Bus Terminal Module/Entries");
-        
+
         const busDetails = {};
 
-        // Function to fetch and display sorted data in a table
+        // Function to display sorted data in a table
         function displaySortedData(dataToDisplay) {
             const tableBody = document.getElementById("table-body");
 
@@ -180,7 +181,7 @@
             return filteredData;
         }
 
-        // Function to set up listeners to auto update table when new date or time is added
+        // Function to set up listeners to auto-update table when new date or time is added
         function setListeners() {
             entriesRef.on("child_added", snapshot => {
                 applyFilters();

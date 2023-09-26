@@ -80,6 +80,7 @@ label {
 }
 
 input[type="date"],
+input[type="time"],
 input[type="text"] {
     width: 100%;
     max-width: 220px;
@@ -119,6 +120,14 @@ button {
 
 button:hover {
     background-color: #555;
+}
+
+#add-bus, #add-slot {
+    display: block;
+}
+
+#edit-remove-bus, #edit-remove-slot {
+    display: none;
 }
 
 /* Table */
