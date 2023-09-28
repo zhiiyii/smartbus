@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Card Balance Management</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" type="text/css" href="../css/style.css">
+    <link rel="icon" type="image/png" href="../images/bus.png">
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
     <style>
@@ -112,9 +113,6 @@
             </div>
         </div>
     </div>
-
-
-
 </body>
 <script>
     // Initialize Firebase with your configuration
@@ -164,7 +162,6 @@
             <p>Balance:  $${matchingEntry.Balance}</p>
             <!-- Add more properties if needed -->
         `;
-
     }
 
     // Prompt the user for the top-up amount
@@ -279,8 +276,6 @@
                 console.error("Error fetching data:", error);
             });
     }
-
-
 </script>
 
 </html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Light Adjustment Report</title>
+    <link rel="stylesheet" type="text/css" href="../css/pt.css">
+    <link rel="icon" type="image/png" href="../images/bus.png">
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
+</head>
+
+<body>
+
+    <div class="topnav">
+        <div class="dropdown">
+            <button class="dropbtn">Bus Terminal</button>
+            <div class="dropdown-content">
+                <a href="bus information.html">Bus Details</a>
+                <a href="bus slot.html">Bus Slots</a>
+                <a href="bus schedule.html">Bus Schedules</a>
+                <a href="bus entry.html">Bus Entries</a>
+                <a href="bus stop warning.html">Bus Stop Warning</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Bus Environment</button>
+            <div class="dropdown-content">
+                <a href="bus_fan_usage.html">Bus Fan Usage</a>
+                <a href="bus_light_usage.html">Bus Light Usage</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Passenger Services Dashboard</button>
+            <div class="dropdown-content">
+                <a href="card balance management.html">Card Balance Management</a>
+                <a href="bus fare tracking.html">Bus Fare Tracking</a>
+                <a href="bus seats availability.html">Real-time Seats Availability</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">4</button>
+            <div class="dropdown-content">
+                <a href="#">Option 1</a>
+                <a href="#">Option 2</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-container">
+        <div class="filter-section">
+            <!-- Edit the label text here -->
+            <label for="filterDate">Select a Date:</label>
+            <input type="date" id="filterDate">
+            <button id="filterButton">Filter</button>
+        </div>
+    </div>
+
+    <h1>Bus Inner Light Adjustment Reports</h1>
+
+    <!-- Create a table to display LED changes based on timestamps -->
+    <div class="table-container">
+        <div class="scrollable-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Light 1 Status</th>
+                        <th>Light 2 Status</th>
+                        <th>Light 3 Status</th>
+                        <th>Intensity Description</th>
+                    </tr>
+                </thead>
+                <tbody id="ledChangesTableBody">
+                    <!-- LED change entries will be added here dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="intensity-averages" style="display:none;">
+        <h2>Average Intensity for Selected Date:</h2>
+        <p>High Intensity: <span id="avgHighIntensity">0</span></p>
+        <p>Medium Intensity: <span id="avgMediumIntensity">0</span></p>
+        <p>Low Intensity: <span id="avgLowIntensity">0</span></p>
+    </div>
+
+    <script>
+        // Firebase configuration
+        var config = {
+            "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
+            "authDomain": "smart-bus-ab217.firebaseapp.com",
+            "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
+            "storageBucket": "smart-bus-ab217.appspot.com"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(config);
+
+        // Reference to LED data in Firebase
+        const ledDataRef = firebase.database().ref("Environment_module/Bus_inner_lights");
+
+        // Reference to the table body
+        const tableBody = document.getElementById("ledChangesTableBody");
+
+        // Reference to filter input and button
+        const filterDateInput = document.getElementById("filterDate");
+        const filterButton = document.getElementById("filterButton");
+
+        // Function to filter and show records for the selected date
+        function filterTableByDate(selectedDate) {
+            // Loop through table rows and hide/show based on the selected date
+            const rows = tableBody.getElementsByTagName("tr");
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const dateCell = row.cells[0].textContent;
+
+                // If the date matches the selected date or no date is selected, show the row; otherwise, hide it
+                if (dateCell === selectedDate || selectedDate === "") {
+                    row.style.display = "table-row";
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        }
+
+        // Function to calculate and update intensity averages
+        function calculateIntensityAverages(selectedDate) {
+            const rows = tableBody.getElementsByTagName("tr");
+            let totalHighIntensity = 0;
+            let totalMediumIntensity = 0;
+            let totalLowIntensity = 0;
+            let count = 0;
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const dateCell = row.cells[0].textContent;
+
+                if (dateCell === selectedDate) {
+                    const intensityDescription = row.cells[5].textContent;
+
+                    switch (intensityDescription) {
+                        case "High Intensity":
+                            totalHighIntensity++;
+                            break;
+                        case "Medium Intensity":
+                            totalMediumIntensity++;
+                            break;
+                        case "Low Intensity":
+                            totalLowIntensity++;
+                            break;
+                    }
+
+                    count++;
+                }
+            }
+
+            // Calculate and update the averages as percentages
+            const totalRecords = count;
+            const avgHighIntensity = ((totalHighIntensity / totalRecords) * 100).toFixed(2);
+            const avgMediumIntensity = ((totalMediumIntensity / totalRecords) * 100).toFixed(2);
+            const avgLowIntensity = ((totalLowIntensity / totalRecords) * 100).toFixed(2);
+
+            document.getElementById("avgHighIntensity").textContent = avgHighIntensity + "%";
+            document.getElementById("avgMediumIntensity").textContent = avgMediumIntensity + "%";
+            document.getElementById("avgLowIntensity").textContent = avgLowIntensity + "%";
+
+            // Show the intensity averages section
+            const intensityAveragesSection = document.querySelector(".intensity-averages");
+            intensityAveragesSection.style.display = "block";
+        }
+
+        // Add a click event listener to the filter button
+        filterButton.addEventListener("click", function () {
+            // Get the selected date from the input field
+            const selectedDate = filterDateInput.value;
+
+            // Call the filter function to show records for the selected date
+            filterTableByDate(selectedDate);
+            calculateIntensityAverages(selectedDate);
+        });
+
+        // Listen for changes in LED data
+        ledDataRef.on("child_added", function (snapshot) {
+            var data = snapshot.val();
+            var timestamp = snapshot.key;
+
+            // Extract date and time from the timestamp
+            var timestampParts = timestamp.split("_");
+            var date = timestampParts[0];
+            var time = timestampParts[1];
+
+            // Extract LED status and intensity description
+            var led1Status = data.light_1 ? "On" : "Off";
+            var led2Status = data.light_2 ? "On" : "Off";
+            var led3Status = data.light_3 ? "On" : "Off";
+            var intensityDescription = data.Intensity_Description;
+
+            // Create a new table row for the LED change entry
+            var newRow = tableBody.insertRow(0); // Insert at the top
+            var dateCell = newRow.insertCell(0);
+            var timeCell = newRow.insertCell(1);
+            var led1Cell = newRow.insertCell(2);
+            var led2Cell = newRow.insertCell(3);
+            var led3Cell = newRow.insertCell(4);
+            var intensityCell = newRow.insertCell(5);
+
+            // Set the cell values
+            dateCell.textContent = date;
+            timeCell.textContent = time;
+            led1Cell.textContent = led1Status;
+            led2Cell.textContent = led2Status;
+            led3Cell.textContent = led3Status;
+            intensityCell.textContent = intensityDescription;
+
+            // Show all records by default
+            filterTableByDate("");
+            //calculateIntensityAverages("");
+        });
+
+        // // Initialize Adafruit IO client
+        // var aio = new AdafruitIO({
+        //     username: 'evelynLiong',
+        //     key: 'aio_kZdg70Vb2Gg42MYeL9xmHhhPFqjo'
+        // });
+
+        // // Define the feed name you want to retrieve data from
+        // var feedName = 'light intensity';
+
+        // // Function to fetch and display data
+        // function fetchData() {
+        //     aio.feeds(feedName).data.get(function(data) {
+        //         // Data is retrieved successfully, you can display it on your website
+        //         var dataContainer = document.getElementById('data-container');
+        //         dataContainer.innerHTML = 'Data from Adafruit IO: ' + data.value;
+        //     });
+        // }
+
+        // // Call the fetchData function to retrieve and display data
+        // fetchData();
+    </script>
+</body>
+
+</html>
