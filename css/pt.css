@@ -128,7 +128,15 @@ tr:nth-child(even) {
     font-weight: bold;
 }
 
-.intensity-averages{
+ /* CSS to center the filter section */
+ .filter-container1 {
+    text-align: center;
+    padding-top: 10px;
+    padding-bottom: 50px;
+    font-weight: bold;
+}
+
+.intensity-averages, .bus-averages, .bus-date-averages{
     text-align: center;
     border: 1px solid #ccc;
     padding: 10px;
@@ -141,6 +149,11 @@ tr:nth-child(even) {
     padding: 10px 20px;
     font-size: 16px;
     margin: 10px;
+}
+
+.button-container {
+    text-align: center;
+    margin: 20px;
 }
 
 /* Style for horizontal buttons */

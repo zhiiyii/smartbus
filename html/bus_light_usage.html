@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,16 +9,14 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-database-compat.js"></script>
 </head>
-
 <body>
 
     <div class="topnav">
         <div class="dropdown">
             <button class="dropbtn">Bus Terminal</button>
             <div class="dropdown-content">
-                <a href="bus information.html">Bus Details</a>
-                <a href="bus slot.html">Bus Slots</a>
                 <a href="bus schedule.html">Bus Schedules</a>
+                <a href="bus information.html">Bus Details</a>
                 <a href="bus entry.html">Bus Entries</a>
                 <a href="bus stop warning.html">Bus Stop Warning</a>
             </div>
@@ -53,18 +50,33 @@
             <!-- Edit the label text here -->
             <label for="filterDate">Select a Date:</label>
             <input type="date" id="filterDate">
-            <button id="filterButton">Filter</button>
+            
         </div>
+    </div>
+
+    <div class="filter-container1">
+        <div class = "filter-section">
+        <label for="filterBusId">Input a Bus ID:</label>
+        <input type="text" id="filterBusId">
+        
+        </div>
+    </div>
+
+    <div class = "button-container">
+        <button id="filterDateButton">Filter by Date</button>
+        <button id="filterBusIdButton">Filter by Bus ID</button>
+        <button id="filterBusIdDateButton">Filter by Bus ID and date</button>
     </div>
 
     <h1>Bus Inner Light Adjustment Reports</h1>
 
-    <!-- Create a table to display LED changes based on timestamps -->
-    <div class="table-container">
+     <!-- Create a table to display LED changes based on timestamps -->
+     <div class="table-container">
         <div class="scrollable-table">
             <table>
                 <thead>
                     <tr>
+                        <th>Bus ID</th>
                         <th>Date</th>
                         <th>Time</th>
                         <th>Light 1 Status</th>
@@ -80,34 +92,57 @@
         </div>
     </div>
 
-    <div class="intensity-averages" style="display:none;">
+    <div class="intensity-averages" style = "display:none;">
         <h2>Average Intensity for Selected Date:</h2>
         <p>High Intensity: <span id="avgHighIntensity">0</span></p>
         <p>Medium Intensity: <span id="avgMediumIntensity">0</span></p>
         <p>Low Intensity: <span id="avgLowIntensity">0</span></p>
     </div>
 
+    <div class="bus-averages" style="display: none;">
+        <h2>Average Intensity for Selected Bus:</h2>
+        <!-- <p>Bus ID: <span id="selectedBusDateId">N/A</span></p> -->
+        <p>High Intensity: <span id="avgBusHighIntensity">0</span></p>
+        <p>Medium Intensity: <span id="avgBusMediumIntensity">0</span></p>
+        <p>Low Intensity: <span id="avgBusLowIntensity">0</span></p>
+    </div>
+
+    <div class="bus-date-averages" style="display: none;">
+        <h2>Average Intensity for Selected Bus on selected date:</h2>
+        <!-- <p>Bus ID: <span id="selectedBusId">N/A</span></p>
+        <p>Date: <span id = "selectedDate"></span></p> -->
+        <p>High Intensity: <span id="avgBusDateHighIntensity">0</span></p>
+        <p>Medium Intensity: <span id="avgBusDateMediumIntensity">0</span></p>
+        <p>Low Intensity: <span id="avgBusDateLowIntensity">0</span></p>
+    </div>
+
     <script>
-        // Firebase configuration
-        var config = {
-            "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
-            "authDomain": "smart-bus-ab217.firebaseapp.com",
-            "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
-            "storageBucket": "smart-bus-ab217.appspot.com"
-        };
+    // Firebase configuration
+    var config = {
+    "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
+    "authDomain": "smart-bus-ab217.firebaseapp.com",
+    "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "storageBucket": "smart-bus-ab217.appspot.com"
+    };
 
         // Initialize Firebase
         firebase.initializeApp(config);
 
         // Reference to LED data in Firebase
-        const ledDataRef = firebase.database().ref("Environment_module/Bus_inner_lights");
+        const ledDataRef = firebase.database().ref("Environment_modules/Bus_inner_lights");
 
         // Reference to the table body
         const tableBody = document.getElementById("ledChangesTableBody");
 
         // Reference to filter input and button
         const filterDateInput = document.getElementById("filterDate");
-        const filterButton = document.getElementById("filterButton");
+        const filterButton = document.getElementById("filterDateButton");
+
+        const filterBusIdInput = document.getElementById("filterBusId");
+        const filterBusIdButton = document.getElementById("filterBusIdButton");
+
+        const filterBusIdDateButton = document.getElementById("filterBusIdDateButton");
+
 
         // Function to filter and show records for the selected date
         function filterTableByDate(selectedDate) {
@@ -115,7 +150,7 @@
             const rows = tableBody.getElementsByTagName("tr");
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
-                const dateCell = row.cells[0].textContent;
+                const dateCell = row.cells[1].textContent;
 
                 // If the date matches the selected date or no date is selected, show the row; otherwise, hide it
                 if (dateCell === selectedDate || selectedDate === "") {
@@ -126,121 +161,319 @@
             }
         }
 
-        // Function to calculate and update intensity averages
         function calculateIntensityAverages(selectedDate) {
-            const rows = tableBody.getElementsByTagName("tr");
-            let totalHighIntensity = 0;
-            let totalMediumIntensity = 0;
-            let totalLowIntensity = 0;
-            let count = 0;
+    const rows = tableBody.getElementsByTagName("tr");
+    let totalHighIntensity = 0;
+    let totalMediumIntensity = 0;
+    let totalLowIntensity = 0;
+    let count = 0;
 
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                const dateCell = row.cells[0].textContent;
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const dateCell = row.cells[1].textContent;
 
-                if (dateCell === selectedDate) {
-                    const intensityDescription = row.cells[5].textContent;
+        if (dateCell === selectedDate) {
+            const intensityDescription = row.cells[6].textContent;
 
-                    switch (intensityDescription) {
-                        case "High Intensity":
-                            totalHighIntensity++;
-                            break;
-                        case "Medium Intensity":
-                            totalMediumIntensity++;
-                            break;
-                        case "Low Intensity":
-                            totalLowIntensity++;
-                            break;
-                    }
-
-                    count++;
-                }
+            switch (intensityDescription) {
+                case "High Intensity":
+                    totalHighIntensity++;
+                    break;
+                case "Medium Intensity":
+                    totalMediumIntensity++;
+                    break;
+                case "Low Intensity":
+                    totalLowIntensity++;
+                    break;
             }
 
-            // Calculate and update the averages as percentages
-            const totalRecords = count;
-            const avgHighIntensity = ((totalHighIntensity / totalRecords) * 100).toFixed(2);
-            const avgMediumIntensity = ((totalMediumIntensity / totalRecords) * 100).toFixed(2);
-            const avgLowIntensity = ((totalLowIntensity / totalRecords) * 100).toFixed(2);
+            count++;
+        }
+    }
 
-            document.getElementById("avgHighIntensity").textContent = avgHighIntensity + "%";
-            document.getElementById("avgMediumIntensity").textContent = avgMediumIntensity + "%";
-            document.getElementById("avgLowIntensity").textContent = avgLowIntensity + "%";
+    // Check if there are records for the selected date
+    if (count > 0) {
+        // Calculate and update the averages as percentages
+        const totalRecords = count;
+        const avgHighIntensity = ((totalHighIntensity / totalRecords) * 100).toFixed(2);
+        const avgMediumIntensity = ((totalMediumIntensity / totalRecords) * 100).toFixed(2);
+        const avgLowIntensity = ((totalLowIntensity / totalRecords) * 100).toFixed(2);
 
-            // Show the intensity averages section
-            const intensityAveragesSection = document.querySelector(".intensity-averages");
-            intensityAveragesSection.style.display = "block";
+        document.getElementById("avgHighIntensity").textContent = avgHighIntensity + "%";
+        document.getElementById("avgMediumIntensity").textContent = avgMediumIntensity + "%";
+        document.getElementById("avgLowIntensity").textContent = avgLowIntensity + "%";
+
+        // Show the intensity averages section
+        const intensityAveragesSection = document.querySelector(".intensity-averages");
+        intensityAveragesSection.style.display = "block";
+    } else {
+        // If no records for the selected date, display "N/A" or any other appropriate message
+        document.getElementById("avgHighIntensity").textContent = "N/A";
+        document.getElementById("avgMediumIntensity").textContent = "N/A";
+        document.getElementById("avgLowIntensity").textContent = "N/A";
+        
+        // Show the intensity averages section
+        const intensityAveragesSection = document.querySelector(".intensity-averages");
+        intensityAveragesSection.style.display = "block";
+
+        const busDateAveragesSection = document.querySelector(".bus-date-averages");
+        busDateAveragesSection.style.display = "none";
+    }
+}
+
+        
+
+       // Add a click event listener to the filter button
+filterButton.addEventListener("click", function () {
+    // Get the selected date from the input field
+    const selectedDate = filterDateInput.value;
+
+    // Call the filter function to show records for the selected date
+    filterTableByDate(selectedDate);
+
+    // Calculate and display intensity averages for the selected date
+    calculateIntensityAverages(selectedDate);
+});
+
+
+// Function to calculate and display intensity averages for the selected bus
+function calculateBusIntensityAverages_bus(selectedBusId) {
+    const rows = tableBody.getElementsByTagName("tr");
+    let totalHighIntensity = 0;
+    let totalMediumIntensity = 0;
+    let totalLowIntensity = 0;
+    let count = 0;
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const busIdCell = row.cells[0].textContent; // Use cells[0] to get the Bus ID
+
+        if (busIdCell === selectedBusId) {
+            const intensityDescription = row.cells[6].textContent; // Use cells[6] to get the intensity description
+
+            switch (intensityDescription) {
+                case "High Intensity":
+                    totalHighIntensity++;
+                    break;
+                case "Medium Intensity":
+                    totalMediumIntensity++;
+                    break;
+                case "Low Intensity":
+                    totalLowIntensity++;
+                    break;
+            }
+
+            count++;
+        }
+    }
+
+    // Calculate and update the averages as percentages
+    const totalRecords = count;
+    const avgHighIntensity = ((totalHighIntensity / totalRecords) * 100).toFixed(2);
+    const avgMediumIntensity = ((totalMediumIntensity / totalRecords) * 100).toFixed(2);
+    const avgLowIntensity = ((totalLowIntensity / totalRecords) * 100).toFixed(2);
+
+    // Display the selected Bus ID and its intensity averages
+    //document.getElementById("selectedBusId").textContent = selectedBusId;
+    document.getElementById("avgBusHighIntensity").textContent = avgHighIntensity + "%";
+    document.getElementById("avgBusMediumIntensity").textContent = avgMediumIntensity + "%";
+    document.getElementById("avgBusLowIntensity").textContent = avgLowIntensity + "%";
+
+    // Show the bus averages section
+    const busAveragesSection = document.querySelector(".bus-averages");
+    busAveragesSection.style.display = "block";
+
+    // Show the bus averages section
+    const busDateAveragesSection = document.querySelector(".bus-date-averages");
+    busDateAveragesSection.style.display = "none";
+
+    // Hide the intensity averages section
+    const intensityAveragesSection = document.querySelector(".intensity-averages");
+    intensityAveragesSection.style.display = "none";
+}
+
+function calculateBusIntensityAverages(selectedBusId, selectedDate) {
+        const rows = tableBody.getElementsByTagName("tr");
+        let totalHighIntensity = 0;
+        let totalMediumIntensity = 0;
+        let totalLowIntensity = 0;
+        let count = 0;
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const busIdCell = row.cells[0].textContent; // Use cells[0] to get the Bus ID
+            const dateCell = row.cells[1].textContent; // Use cells[1] to get the Date
+
+            if (busIdCell === selectedBusId && dateCell === selectedDate) {
+                const intensityDescription = row.cells[6].textContent; // Use cells[6] to get the intensity description
+
+                switch (intensityDescription) {
+                    case "High Intensity":
+                        totalHighIntensity++;
+                        break;
+                    case "Medium Intensity":
+                        totalMediumIntensity++;
+                        break;
+                    case "Low Intensity":
+                        totalLowIntensity++;
+                        break;
+                }
+
+                count++;
+            }
         }
 
-        // Add a click event listener to the filter button
-        filterButton.addEventListener("click", function () {
-            // Get the selected date from the input field
-            const selectedDate = filterDateInput.value;
+        // Calculate and update the averages as percentages
+        const totalRecords = count;
+        const avgHighIntensity = ((totalHighIntensity / totalRecords) * 100).toFixed(2);
+        const avgMediumIntensity = ((totalMediumIntensity / totalRecords) * 100).toFixed(2);
+        const avgLowIntensity = ((totalLowIntensity / totalRecords) * 100).toFixed(2);
 
-            // Call the filter function to show records for the selected date
-            filterTableByDate(selectedDate);
-            calculateIntensityAverages(selectedDate);
-        });
+        // Display the selected Bus ID and its intensity averages for the selected date
+        //document.getElementById("selectedBusDateId").textContent = selectedBusDateId;
+        document.getElementById("avgBusDateHighIntensity").textContent = avgHighIntensity + "%";
+        document.getElementById("avgBusDateMediumIntensity").textContent = avgMediumIntensity + "%";
+        document.getElementById("avgBusDateLowIntensity").textContent = avgLowIntensity + "%";
 
-        // Listen for changes in LED data
-        ledDataRef.on("child_added", function (snapshot) {
-            var data = snapshot.val();
-            var timestamp = snapshot.key;
+        // Show the bus averages section
+        const busAveragesSection = document.querySelector(".bus-averages");
+        busAveragesSection.style.display = "none";
 
-            // Extract date and time from the timestamp
-            var timestampParts = timestamp.split("_");
-            var date = timestampParts[0];
-            var time = timestampParts[1];
+        // Show the bus averages section
+        const busDateAveragesSection = document.querySelector(".bus-date-averages");
+        busDateAveragesSection.style.display = "block";
 
-            // Extract LED status and intensity description
-            var led1Status = data.light_1 ? "On" : "Off";
-            var led2Status = data.light_2 ? "On" : "Off";
-            var led3Status = data.light_3 ? "On" : "Off";
-            var intensityDescription = data.Intensity_Description;
+        // Hide the intensity averages section
+        const intensityAveragesSection = document.querySelector(".intensity-averages");
+        intensityAveragesSection.style.display = "none";
+    }
 
-            // Create a new table row for the LED change entry
-            var newRow = tableBody.insertRow(0); // Insert at the top
-            var dateCell = newRow.insertCell(0);
-            var timeCell = newRow.insertCell(1);
-            var led1Cell = newRow.insertCell(2);
-            var led2Cell = newRow.insertCell(3);
-            var led3Cell = newRow.insertCell(4);
-            var intensityCell = newRow.insertCell(5);
+    function filterTableByBusIdAndDate(selectedBusId, selectedDate) {
+    const rows = tableBody.getElementsByTagName("tr");
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const busIdCell = row.cells[0].textContent;
+        const dateCell = row.cells[1].textContent;
 
-            // Set the cell values
-            dateCell.textContent = date;
-            timeCell.textContent = time;
-            led1Cell.textContent = led1Status;
-            led2Cell.textContent = led2Status;
-            led3Cell.textContent = led3Status;
-            intensityCell.textContent = intensityDescription;
+        if ((busIdCell === selectedBusId || selectedBusId === "") &&
+            (dateCell === selectedDate || selectedDate === "")) {
+            row.style.display = "table-row";
+        } else {
+            row.style.display = "none";
+        }
+    }
+}
 
-            // Show all records by default
-            filterTableByDate("");
-            //calculateIntensityAverages("");
-        });
+        // Modify the filterTableByBusId function to accept only the selectedBusId parameter
+        function filterTableByBusId_bus(selectedBusId) {
+            // Loop through table rows and hide/show based on the selected Bus ID
+            const rows = tableBody.getElementsByTagName("tr");
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const busIdCell = row.cells[0].textContent; // Change index to 0 for the "Bus ID" column
 
-        // // Initialize Adafruit IO client
-        // var aio = new AdafruitIO({
-        //     username: 'evelynLiong',
-        //     key: 'aio_kZdg70Vb2Gg42MYeL9xmHhhPFqjo'
-        // });
+                // If the Bus ID matches or no Bus ID is selected, show the row; otherwise, hide it
+                if (busIdCell === selectedBusId || selectedBusId === "") {
+                    row.style.display = "table-row";
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        }
 
-        // // Define the feed name you want to retrieve data from
-        // var feedName = 'light intensity';
 
-        // // Function to fetch and display data
-        // function fetchData() {
-        //     aio.feeds(feedName).data.get(function(data) {
-        //         // Data is retrieved successfully, you can display it on your website
-        //         var dataContainer = document.getElementById('data-container');
-        //         dataContainer.innerHTML = 'Data from Adafruit IO: ' + data.value;
-        //     });
-        // }
+// Add a click event listener to the "Filter by Bus ID" button
+filterBusIdButton.addEventListener("click", function() {
+    // Get the selected Bus ID and date from the input fields
+    const selectedBusId = filterBusIdInput.value;
+    const selectedDate = filterDateInput.value;
 
-        // // Call the fetchData function to retrieve and display data
-        // fetchData();
+    // Call the filter function to show records for the selected Bus ID and Date
+    //filterTableByBusId(selectedBusId, selectedDate);
+    filterTableByBusId_bus(selectedBusId);
+
+    // Calculate and display intensity averages for the selected Bus ID
+    //calculateBusIntensityAverages(selectedBusId, selectedDate);
+    calculateBusIntensityAverages_bus(selectedBusId);
+});
+
+// Add a click event listener to the "Filter by Bus ID" button
+filterBusIdDateButton.addEventListener("click", function() {
+    // Get the selected Bus ID and date from the input fields
+    const selectedBusId = filterBusIdInput.value;
+    const selectedDate = filterDateInput.value;
+
+    // Call the filter function to show records for the selected Bus ID and Date
+    filterTableByBusIdAndDate(selectedBusId, selectedDate);
+    //filterTableByBusId_bus(selectedBusId);
+
+    // Calculate and display intensity averages for the selected Bus ID
+    calculateBusIntensityAverages(selectedBusId, selectedDate);
+    //calculateBusIntensityAverages_bus(selectedBusId);
+});
+
+
+
+         // Function to display fan data in the table
+         function displayLightData(snapshot) {
+            // Clear existing table rows
+            tableBody.innerHTML = "";
+
+            snapshot.forEach(function(busSnapshot) {
+                const busId = busSnapshot.key;
+
+                busSnapshot.forEach(function(macSnapshot) {
+                    const macAddress = macSnapshot.key;
+                    const timestamps = macSnapshot.val();
+
+                    for (const timestamp in timestamps) {
+                        if (timestamps.hasOwnProperty(timestamp)) {
+                            const data = timestamps[timestamp];
+                            const row = document.createElement("tr");
+
+                            // Create table cells
+                            const busIdCell = document.createElement("td");
+                            //const macAddressCell = document.createElement("td");
+                            const dateCell = document.createElement("td");
+                            const timeCell = document.createElement("td");
+                            const light1Cell = document.createElement("td");
+                            const light2Cell = document.createElement("td");
+                            const light3Cell = document.createElement("td");
+                            const intensityCell = document.createElement("td");
+
+                            // Split timestamp into date and time
+                            const parts = timestamp.split("_");
+                            const date = parts[0];
+                            const time = parts[1];
+
+                            // Set cell values
+                            busIdCell.textContent = busId;
+                            dateCell.textContent = date;
+                            timeCell.textContent = time;
+                            light1Cell.textContent = data.light_1;
+                            light2Cell.textContent = data.light_2;
+                            light3Cell.textContent = data.light_3;
+                            intensityCell.textContent = data.Intensity_Description;
+
+                            // Append cells to the row
+                            row.appendChild(busIdCell);
+                            row.appendChild(dateCell);
+                            row.appendChild(timeCell);
+                            row.appendChild(light1Cell);
+                            row.appendChild(light2Cell);
+                            row.appendChild(light3Cell);
+                            row.appendChild(intensityCell);
+
+                            // Append row to the table body
+                            tableBody.appendChild(row);
+                        }
+                    }
+                });
+            });
+        }
+
+// Listen for changes in fan data
+ledDataRef.on("value", displayLightData);
     </script>
 </body>
-
 </html>

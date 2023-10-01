@@ -52,8 +52,23 @@
             <!-- Edit the label text here -->
             <label for="filterDate">Select a Date:</label>
             <input type="date" id="filterDate">
-            <button id="filterButton">Filter</button>
+            
         </div>
+    </div>
+
+    <div class="filter-container1">
+        <div class = "filter-section">
+        <label for="filterBusId">Select a Bus ID:</label>
+        <input type="text" id="filterBusId">
+        
+        </div>
+    </div>
+
+
+    <div class = "button-container">
+        <button id="filterButton">Filter by Date</button>
+        <button id="filterBusIdButton">Filter by Bus ID</button>
+        <button id="filterDateBusIdButton">Filter by Date and Bus ID</button>
     </div>
 
     <h1>Bus Fan Adjustment Reports</h1>
@@ -64,6 +79,7 @@
             <table>
                 <thead>
                     <tr>
+                        <th>Bus ID</th>
                         <th>Date</th>
                         <th>Time</th>
                         <th>Temperature</th>
@@ -76,9 +92,10 @@
         </div>
     </div>
 
+
     <!-- Display frequency of fan usage for the selected date -->
     <div class="frequency-container">
-        <h2>Fan Usage Frequency for Selected Date:</h2>
+        <h2>Fan Usage Frequency</h2>
         <p id="fanUsageFrequency"></p>
     </div>
 
@@ -94,8 +111,8 @@
         // Initialize Firebase
         firebase.initializeApp(config);
 
-        // Reference to LED data in Firebase
-        const fanDataRef = firebase.database().ref("Environment_module/Bus_fan");
+       // Reference to your data in Firebase
+       const dataRef = firebase.database().ref("Environment_modules/Bus_fan");
 
         // Reference to the table body
         const tableBody = document.getElementById("fanChangesTableBody");
@@ -104,16 +121,25 @@
         const filterDateInput = document.getElementById("filterDate");
         const filterButton = document.getElementById("filterButton");
 
+        // Reference to filter input and button for Bus ID
+        const filterBusIdInput = document.getElementById("filterBusId");
+        const filterBusIdButton = document.getElementById("filterBusIdButton");
+        const filterDateBusIdButton = document.getElementById("filterDateBusIdButton");
+
         // Function to filter and show records for the selected date
         function filterTableByDate(selectedDate) {
             // Loop through table rows and hide/show based on the selected date
             const rows = tableBody.getElementsByTagName("tr");
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
-                const dateCell = row.cells[0].textContent;
+                const timestampCell = row.cells[1].textContent; // Change index to 1 for the "Date" column
+
+                // Split timestamp into date and time
+                const parts = timestampCell.split("_");
+                const date = parts[0];
 
                 // If the date matches the selected date or no date is selected, show the row; otherwise, hide it
-                if (dateCell === selectedDate || selectedDate === "") {
+                if (date === selectedDate || selectedDate === "") {
                     row.style.display = "table-row";
                 } else {
                     row.style.display = "none";
@@ -142,68 +168,79 @@
             }
         });
 
+
         // Function to display fan data in the table
         function displayFanData(snapshot) {
-            const fanData = snapshot.val();
-
             // Clear existing table rows
             tableBody.innerHTML = "";
 
-            // Loop through the fan data and create table rows
-            for (const timestamp in fanData) {
-                if (fanData.hasOwnProperty(timestamp)) {
-                    const data = fanData[timestamp];
-                    const row = document.createElement("tr");
+            snapshot.forEach(function(busSnapshot) {
+                const busId = busSnapshot.key;
 
-                    // Create table cells
-                    const dateCell = document.createElement("td");
-                    const timeCell = document.createElement("td");
-                    const tempCell = document.createElement("td");
-                    const fanStatusCell = document.createElement("td");
+                busSnapshot.forEach(function(macSnapshot) {
+                    const macAddress = macSnapshot.key;
+                    const timestamps = macSnapshot.val();
 
-                    // Split timestamp into date and time
-                    const parts = timestamp.split("_");
-                    const date = parts[0];
-                    const time = parts[1];
+                    for (const timestamp in timestamps) {
+                        if (timestamps.hasOwnProperty(timestamp)) {
+                            const data = timestamps[timestamp];
+                            const row = document.createElement("tr");
 
-                    // Set cell values
-                    dateCell.textContent = date;
-                    timeCell.textContent = time;
-                    tempCell.textContent = data.Temperature;
-                    fanStatusCell.textContent = data.FanStatus;
+                            // Create table cells
+                            const busIdCell = document.createElement("td");
+                            //const macAddressCell = document.createElement("td");
+                            const dateCell = document.createElement("td");
+                            const timeCell = document.createElement("td");
+                            const tempCell = document.createElement("td");
+                            const fanStatusCell = document.createElement("td");
 
-                    // Append cells to the row
-                    row.appendChild(dateCell);
-                    row.appendChild(timeCell);
-                    row.appendChild(tempCell);
-                    row.appendChild(fanStatusCell);
+                            // Split timestamp into date and time
+                            const parts = timestamp.split("_");
+                            const date = parts[0];
+                            const time = parts[1];
 
-                    // Append row to the table body
-                    tableBody.appendChild(row);
-                }
-            }
+                            // Set cell values
+                            busIdCell.textContent = busId;
+                            dateCell.textContent = date;
+                            timeCell.textContent = time;
+                            tempCell.textContent = data.Temperature;
+                            fanStatusCell.textContent = data.FanStatus;
+
+                            // Append cells to the row
+                            row.appendChild(busIdCell);
+                            row.appendChild(dateCell);
+                            row.appendChild(timeCell);
+                            row.appendChild(tempCell);
+                            row.appendChild(fanStatusCell);
+
+                            // Append row to the table body
+                            tableBody.appendChild(row);
+                        }
+                    }
+                });
+            });
         }
 
         // Function to calculate and display fan usage frequency
         function calculateFanUsageFrequency(selectedDate) {
-            let fanUsageCount = 0;
+                    let fanUsageCount = 0;
 
-            // Loop through table rows and count fan usage for the selected date
-            const rows = tableBody.getElementsByTagName("tr");
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                const dateCell = row.cells[0].textContent;
+                    // Loop through table rows and count fan usage for the selected date
+                    const rows = tableBody.getElementsByTagName("tr");
+                    for (let i = 0; i < rows.length; i++) {
+                        const row = rows[i];
+                        const dateCell = row.cells[1].textContent;
 
-                if (dateCell === selectedDate) {
-                    const fanStatusCell = row.cells[3].textContent;
-                    if (fanStatusCell === "Fan turned on") {
-                        fanUsageCount++;
+                        if (dateCell === selectedDate) {
+                            const fanStatusCell = row.cells[4].textContent;
+                            if (fanStatusCell === "Fan turned on") {
+                                fanUsageCount++;
+                            }
+                        }
                     }
-                }
-            }
 
-            return fanUsageCount;
-        }
+                    return fanUsageCount;
+            }
 
         // Add a click event listener to the filter button
         filterButton.addEventListener("click", function () {
@@ -218,9 +255,133 @@
             document.getElementById("fanUsageFrequency").textContent = `Fan turned on ${fanUsageFrequency} times on ${selectedDate}`;
         });
 
-        // Listen for changes in fan data
-        fanDataRef.on("value", displayFanData);
-    </script>
-</body>
+        // Function to filter and show records for the selected Bus ID and Date
+        function filterTableByDateBusId(selectedBusId, selectedDate) {
+            // Loop through table rows and hide/show based on the selected Bus ID and Date
+            const rows = tableBody.getElementsByTagName("tr");
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const busIdCell = row.cells[0].textContent; // Change index to 0 for the "Bus ID" column
+                const dateCell = row.cells[1].textContent; // Change index to 1 for the "Date" column
 
+                // If both Bus ID and Date match or no Bus ID is selected, show the row; otherwise, hide it
+                if ((busIdCell === selectedBusId || selectedBusId === "") &&
+                    (dateCell === selectedDate || selectedDate === "")) {
+                    row.style.display = "table-row";
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        }
+
+        function filterTableByBusId_bus(selectedBusId) {
+            // Loop through table rows and hide/show based on the selected Bus ID
+            const rows = tableBody.getElementsByTagName("tr");
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const busIdCell = row.cells[0].textContent; // Change index to 0 for the "Bus ID" column
+
+                // If Bus ID matches or no Bus ID is selected, show the row; otherwise, hide it
+                if (busIdCell === selectedBusId || selectedBusId === "") {
+                    row.style.display = "table-row";
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        }
+
+        // Add a click event listener to the filter by Bus ID button
+        filterDateBusIdButton.addEventListener("click", function () {
+            // Get the selected Bus ID from the input field
+            const selectedBusId = filterBusIdInput.value;
+
+            // Get the selected date from the date filter
+            const selectedDate = filterDateInput.value;
+
+            // Call the filter function to show records for the selected Bus ID
+            filterTableByDateBusId(selectedBusId, selectedDate);
+
+            // Calculate and display fan usage frequency for the selected Bus ID
+            const fanUsageFrequency = calculateFanUsageFrequencyByBusId(selectedDate, selectedBusId);
+            const fanUsageFrequencyContainer = document.querySelector(".frequency-container");
+
+            // Show the frequency container and set the content
+            if (selectedBusId && selectedDate) {
+                fanUsageFrequencyContainer.style.display = "block";
+                document.getElementById("fanUsageFrequency").textContent = `Fan turned on ${fanUsageFrequency} times on ${selectedDate} for Bus ID ${selectedBusId}`;
+            } else {
+                fanUsageFrequencyContainer.style.display = "none";
+            }
+        });
+
+        // Add a click event listener to the filter by Bus ID button
+        filterBusIdButton.addEventListener("click", function () {
+            // Get the selected Bus ID from the input field
+            const selectedBusId = filterBusIdInput.value;
+
+            // Get the selected date from the date filter
+            const selectedDate = filterDateInput.value;
+
+            // Call the filter function to show records for the selected Bus ID
+            filterTableByBusId_bus(selectedBusId);
+
+            // Calculate and display fan usage frequency for the selected Bus ID
+            const fanUsageFrequency = calculateFanUsageFrequencyByBusId_bus(selectedBusId);
+            const fanUsageFrequencyContainer = document.querySelector(".frequency-container");
+
+            // Show the frequency container and set the content
+            if (selectedBusId && selectedDate) {
+                fanUsageFrequencyContainer.style.display = "block";
+                document.getElementById("fanUsageFrequency").textContent = `Fan turned on ${fanUsageFrequency} times for Bus ID ${selectedBusId}`;
+            } else {
+                fanUsageFrequencyContainer.style.display = "none";
+            }
+        });
+
+        // Function to calculate and display fan usage frequency for a specific Bus ID
+        function calculateFanUsageFrequencyByBusId(selectedDate, selectedBusId) {
+            let fanUsageCount = 0;
+
+            // Loop through table rows and count fan usage for the selected date and Bus ID
+            const rows = tableBody.getElementsByTagName("tr");
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const dateCell = row.cells[1].textContent;
+                const busIdCell = row.cells[0].textContent;
+
+                if (dateCell === selectedDate && busIdCell === selectedBusId) {
+                    const fanStatusCell = row.cells[4].textContent;
+                    if (fanStatusCell === "Fan turned on") {
+                        fanUsageCount++;
+                    }
+                }
+            }
+
+            return fanUsageCount;
+        }
+
+        // Function to calculate and display fan usage frequency for a specific Bus ID
+        function calculateFanUsageFrequencyByBusId_bus(selectedBusId) {
+            let fanUsageCount = 0;
+
+            // Loop through table rows and count fan usage for the selected Bus ID
+            const rows = tableBody.getElementsByTagName("tr");
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const busIdCell = row.cells[0].textContent; // Change index to 0 for the "Bus ID" column
+                const fanStatusCell = row.cells[4].textContent; // Change index to 4 for the "Fan Status" column
+
+                if (busIdCell === selectedBusId && fanStatusCell === "Fan turned on") {
+                    fanUsageCount++;
+                }
+            }
+
+            return fanUsageCount;
+        }
+
+
+// Listen for changes in fan data
+dataRef.on("value", displayFanData);
+</script>
+</body>
 </html>
