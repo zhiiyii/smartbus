@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Secure Entry Recorder</title>
+    <link rel="stylesheet" type="text/css" href="../css/style.css">
+    <link rel="icon" type="image/png" href="../images/bus.png">
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="topnav">
+        <div class="dropdown">
+            <button class="dropbtn">Bus Terminal</button>
+            <div class="dropdown-content">
+                <a href="bus schedule.html">Bus Schedules</a>
+                <a href="bus information.html">Bus Details</a>
+                <a href="bus entry.html">Bus Entries</a>
+                <a href="bus stop warning.html">Bus Stop Warning</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Bus Environment</button>
+            <div class="dropdown-content">
+                <a href="bus_fan_usage.html">Bus Fan Usage</a>
+                <a href="bus_light_usage.html">Bus Light Usage</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Passenger Services Dashboard</button>
+            <div class="dropdown-content">
+                <a href="card balance management.html">Card Balance Management</a>
+                <a href="bus fare tracking.html">Bus Fare Tracking</a>
+                <a href="bus seats availability.html">Real-time Seats Availability</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Bus Security</button>
+            <div class="dropdown-content">
+                <a href="bus secure entry.html">Bus Secure Entry Recorder</a>
+            </div>
+        </div>
+    </div>
+
+    <h1>Bus Secure Entry Recorder</h1>
+
+    <form>
+        <label for="filterCardID">Filter by Bus ID:</label>
+        <input type="text" id="filterCardID" placeholder="Enter Bus ID"><br>
+        
+        <label for="filterDate" style="padding-right: 20px;">Filter by Date:</label>
+        <input type="date" id="filterDate" name="date"><br>
+        
+        <button type="button" id="filterButton">Filter Record</button>
+    </form>
+
+    <!-- Table Column Name -->
+    <div class="scrollable">
+        <table>
+            <thead>
+                <tr>
+                    <th>Bus ID</th>
+                    <th>Date</th>
+                    <th>Unlock Bus Time</th>
+                    <th>Bus Status</th>
+                    <th>Lock Bus Time</th>
+                </tr>
+            </thead>
+            <tbody id="table_bodyRecord">
+                <!-- Data rows will be added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Firebase configuration
+        var config = {
+            "apiKey": "AIzaSyA8v51_9nk3fal7QFDK9JD0kMMnIIRF6RE",
+            "authDomain": "smart-bus-ab217.firebaseapp.com",
+            "databaseURL": "https://smart-bus-ab217-default-rtdb.asia-southeast1.firebasedatabase.app",
+            "storageBucket": "smart-bus-ab217.appspot.com"
+        };
+
+        // initialize the firebase
+        firebase.initializeApp(config);
+
+        //const database = getDatabase(firebaseApp);
+
+        // reference to RFID card data in Firebase
+        const accessRef = firebase.database().ref("Secure Entry Access");
+
+        accessRef.once("value").then((snapshot) => {
+            const data = snapshot.val();
+            const dataContainer = document.getElementById("table_bodyRecord");
+
+            // Create a variable to keep track of the current TAG ID
+            let currentTagId = null;
+
+            // display data
+            for (let tagId in data) {
+                const tagData = data[tagId];
+                const cardDetails = tagData["Card Details"];
+
+                for (let cardId in cardDetails) {
+                    const cardData = cardDetails[cardId];
+
+                    // Create a new table row
+                    const row = document.createElement("tr");
+
+                    // Create a table cell for TAG ID if it's the first row for this TAG ID
+                    if (tagId !== currentTagId) {
+                        const tagIdCell = document.createElement("td");
+                        tagIdCell.textContent = tagId;
+                        row.appendChild(tagIdCell);
+                        currentTagId = tagId;
+                    } else {
+                        // If it's not the first row for this TAG ID, create an empty cell
+                        const emptyCell = document.createElement("td");
+                        row.appendChild(emptyCell);
+                    }
+
+                    // Separate date and time from Unlock Bus Time
+                    const unlockTime = cardData["Unlock Bus Time"] || '';
+                    const unlockTimeParts = unlockTime.split('_');
+                    const date = unlockTimeParts[0];
+                    const time = unlockTimeParts[1];
+
+                    const lockTime = cardData["Lock Bus Time"] || '';
+                    const lockTimeParts = lockTime.split('_');
+                    const lock_date = lockTimeParts[0];
+                    const lock_time = lockTimeParts[1];
+
+                    const dateCell = document.createElement("td");
+                    dateCell.textContent = date || '-';
+
+                    const timeCell = document.createElement("td");
+                    timeCell.textContent = time || '-';
+
+                    const lock_timeCell = document.createElement("td");
+                    lock_timeCell.textContent = lock_time || '-';
+
+                    const entryTimeCell = document.createElement("td");
+                    entryTimeCell.textContent = cardData["Unlock Bus Time"] || '-';
+
+                    const tagStatusCell = document.createElement("td");
+                    tagStatusCell.textContent = cardData["Bus Status"] || '';
+
+
+                    // Append cells to the row
+                    row.appendChild(dateCell);
+                    row.appendChild(timeCell);
+                    row.appendChild(tagStatusCell);
+                    row.appendChild(lock_timeCell);
+
+                    // Append the row to the table body
+                    dataContainer.appendChild(row);
+                }
+            }
+        }).catch((error) => {
+            console.error("Error fetching data:", error);
+        });
+
+        //filter the data 
+        const filterCardIDInput = document.getElementById("filterCardID");
+        const filterDateInput = document.getElementById("filterDate");
+        const filterButton = document.getElementById("filterButton");
+        const tableBody = document.getElementById("table_bodyRecord");
+
+        // Function to filter and show records based on selected date and card ID
+        function filterTable(selectedDate, selectedCardID) {
+            // Loop through table rows and hide/show based on the selected date and card ID
+            const rows = tableBody.getElementsByTagName("tr");
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const dateCell = row.cells[1].textContent; // Use index 1 for the "Date" column
+                const cardIDCell = row.cells[0].textContent; // Use index 0 for the "Bus Card ID" column
+
+                // If both date and card ID match or no filters are applied, show the row; otherwise, hide it
+                if ((dateCell === selectedDate || selectedDate === "") && (cardIDCell === selectedCardID || selectedCardID === "")) {
+                    row.style.display = "table-row";
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        }
+
+        // Add an event listener for the filter button click
+        filterButton.addEventListener("click", function () {
+            const selectedDate = filterDateInput.value;
+            const selectedCardID = filterCardIDInput.value;
+            filterTable(selectedDate, selectedCardID);
+        });
+    </script>
+</body>
+</html>
